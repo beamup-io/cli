@@ -1,0 +1,82 @@
+#!/bin/bash
+
+cwd=$(pwd)
+
+# Setup temp directories
+# TODO: Upload to beamup release repository
+# instead of outputting to local file system
+cache_dir=/tmp/beamup/cache
+releases_dir=/tmp/beamup/releases
+mkdir -p $cache_dir $releases_dir
+
+# Use the name of the current folder as release name
+PROJECT_NAME=$(basename $cwd)
+
+usage() {
+  echo "usage: beamup shell"
+}
+
+# Start a beamup node in dev mode
+# Mount current folder as volume into container
+# and start an erl shell
+start() {
+  docker run --rm \
+    --init \
+    --net=host \
+    --name=beamup-node \
+    -v "${cwd}:/beamup" \
+    -v "${cache_dir}:/root/.cache/" \
+    -e "PROJECT_NAME=${PROJECT_NAME}"
+    -ti beamup/node \
+    bash -c "cd /beamup && rebar3 shell"
+}
+
+# Attach an erl shell to the currently running node
+shell() {
+  docker exec -ti beamup rebar3 shell
+}
+
+# Build a release of the current directory
+# It will be stored in the cloud
+build() {
+  docker run --rm \
+    --init \
+    --net=host \
+    --name=beamup-node \
+    -v "${cwd}:/beamup" \
+    -v "${cache_dir}:/root/.cache/" \
+    -v "${releases_dir}:/releases" \
+    -e "PROJECT_NAME=${PROJECT_NAME}" \
+    -e "RELEASE_CHANNEL=$1" \
+    -ti beamup/builder
+}
+
+# Run bash inside the node container
+debug() {
+  docker exec -ti beamup bash
+}
+
+# Parse arguments
+cli_command=$1
+shift
+case $cli_command in
+  start)
+    start
+    ;;
+  shell)
+    shell
+    ;;
+  build)
+    release_channel=$1
+    build $release_channel
+    ;;
+  debug)
+    debug
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
+
+echo "" # Clean prompt
