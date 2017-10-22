@@ -1,0 +1,2 @@
+SrcDir = "/beamup/src",
+code:add_path(SrcDir).

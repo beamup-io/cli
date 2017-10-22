@@ -1,6 +1,10 @@
 #!/bin/bash
 
+set -e
+
+cli_args="${@}"
 cwd=$(pwd)
+cli_dir=$(dirname "$(readlink -f "$0")")
 
 # Setup temp directories
 # TODO: Upload to beamup release repository
@@ -10,72 +14,63 @@ releases_dir=/tmp/beamup/releases
 mkdir -p $cache_dir $releases_dir
 
 # Use the name of the current folder as release name
-PROJECT_NAME=$(basename $cwd)
+project_name=$(basename $cwd)
 
-usage() {
-  echo "usage: beamup shell"
-}
+image=beamup/builder:latest
 
-# Start a beamup node in dev mode
-# Mount current folder as volume into container
-# and start an erl shell
-start() {
+container () {
+  echo "BeamUp booting container $image with command $cli_args for project $project_name"
+
   docker run --rm \
     --init \
     --net=host \
-    --name=beamup-node \
-    -v "${cwd}:/beamup" \
-    -v "${cache_dir}:/root/.cache/" \
-    -e "PROJECT_NAME=${PROJECT_NAME}"
-    -ti beamup/node \
-    bash -c "cd /beamup && rebar3 shell"
-}
-
-# Attach an erl shell to the currently running node
-shell() {
-  docker exec -ti beamup rebar3 shell
-}
-
-# Build a release of the current directory
-# It will be stored in the cloud
-build() {
-  docker run --rm \
-    --init \
-    --net=host \
-    --name=beamup-node \
-    -v "${cwd}:/beamup" \
-    -v "${cache_dir}:/root/.cache/" \
-    -v "${releases_dir}:/releases" \
-    -e "PROJECT_NAME=${PROJECT_NAME}" \
+    --entrypoint="/host/lib/entrypoint.sh" \
+    -v "${cli_dir}/src:/host/src:ro" \
+    -v "${cli_dir}/lib:/host/lib:ro" \
+    -v "${cli_dir}/commands:/host/commands:ro" \
+    -v "${cwd}:/host/project/${project_name}:ro" \
+    -v "${cache_dir}:/host/cache/" \
+    -v "${releases_dir}:/host/releases" \
+    -e "PROJECT_NAME=${project_name}" \
     -e "RELEASE_CHANNEL=$1" \
-    -ti beamup/builder
+    -ti $image \
+    "$cli_args"
 }
 
-# Run bash inside the node container
-debug() {
-  docker exec -ti beamup bash
+version () {
+  pushd $cli_dir > /dev/null
+  cli_version=$(git rev-list -1 HEAD)
+  popd > /dev/null
+
+  image_version=$(docker image ls --format='{{.ID}}' $image)
+
+  echo "BeamUp CLI tool version $cli_version"
+  echo "Container image $image version $image_version"
 }
 
-# Parse arguments
+update () {
+  echo "Run this to update the BeamUp CLI tool:"
+  echo "  cd $cli_dir"
+  echo "  git pull"
+}
+
 cli_command=$1
-shift
+if [ -z "$cli_command" ]; then
+  echo "usage: beamup build|update|<script> [--version]"
+  exit 1
+else
+  shift
+fi
+
 case $cli_command in
-  start)
-    start
+  --version)
+    version
     ;;
-  shell)
-    shell
-    ;;
-  build)
-    release_channel=$1
-    build $release_channel
-    ;;
-  debug)
-    debug
+  update)
+    update
     ;;
   *)
-    usage
-    exit 1
+    container
     ;;
 esac
 

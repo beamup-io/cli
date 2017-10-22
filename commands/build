@@ -1,0 +1,8 @@
+#!/usr/bin/env escript
+
+main(_) ->
+  ProjectName = os:getenv("PROJECT_NAME"),
+  ProjectPath = "/beamup/project/" ++ ProjectName,
+  {ok, CommitHash} = beamup_git:commit_hash(ProjectPath),
+  io:format("Last commit hash: ~p~n", [CommitHash]),
+  beamup_sanity_check:check(ProjectPath).
