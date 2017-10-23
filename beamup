@@ -33,7 +33,7 @@ container () {
     -v "${releases_dir}:/host/releases" \
     -e "PROJECT_NAME=${project_name}" \
     -e "RELEASE_CHANNEL=$1" \
-    -ti $image \
+    -t $image \
     "$cli_args"
 }
 
