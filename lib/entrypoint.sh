@@ -14,12 +14,12 @@ mkdir -p /beamup/src/
 cp -R /host/src/* /beamup/src/
 erlc -o /beamup/src/ /beamup/src/*.erl
 
-if [[ "$@" = "selftest" ]]; then
-  exec $@
-else
+if [[ ! "$@" = "selftest" ]]; then
   echo "Syncing working tree to scratch location"
   mkdir -p /beamup/project/${PROJECT_NAME}
   rsync -r /host/project/${PROJECT_NAME}/ /beamup/project/${PROJECT_NAME}/
 
   cd /beamup/project/${PROJECT_NAME}
 fi
+
+exec $@
