@@ -18,6 +18,12 @@ project_name=$(basename $cwd)
 
 image=beamup/builder:latest
 
+# Detect if running in a TTY
+interactive=""
+if [ -t 0 ]; then
+  interactive="i"
+fi
+
 container () {
   echo "BeamUp booting container $image with command $cli_args for project $project_name"
 
@@ -33,7 +39,7 @@ container () {
     -v "${releases_dir}:/host/releases" \
     -e "PROJECT_NAME=${project_name}" \
     -e "RELEASE_CHANNEL=$1" \
-    -t $image \
+    -${interactive}t $image \
     "$cli_args"
 }
 
