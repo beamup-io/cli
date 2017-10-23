@@ -14,10 +14,12 @@ mkdir -p /beamup/src/
 cp -R /host/src/* /beamup/src/
 erlc -o /beamup/src/ /beamup/src/*.erl
 
-# Copy the project's working tree to the scatch location
-mkdir -p /beamup/project/${PROJECT_NAME}
-rsync -r /host/project/${PROJECT_NAME}/ /beamup/project/${PROJECT_NAME}/
+if [[ "$@" = "selftest" ]]; then
+  exec $@
+else
+  echo "Syncing working tree to scratch location"
+  mkdir -p /beamup/project/${PROJECT_NAME}
+  rsync -r /host/project/${PROJECT_NAME}/ /beamup/project/${PROJECT_NAME}/
 
-cd /beamup/project/${PROJECT_NAME}
-
-exec $@
+  cd /beamup/project/${PROJECT_NAME}
+fi

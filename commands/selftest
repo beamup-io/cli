@@ -1,0 +1,7 @@
+#!/usr/bin/env escript
+
+main(_) ->
+  io:format("  J: Hello, Mike.~n"),
+  io:format("  M: Hello, Joe. System working?~n"),
+  io:format("  J: Seems to be.~n"),
+  io:format("  M: Okay, fine.~n~n").
