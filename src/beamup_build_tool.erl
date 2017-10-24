@@ -1,6 +1,10 @@
 -module(beamup_build_tool).
 
--export([supported_tools/0, supported_tools_names/0, detect/1, deps/1]).
+-export([supported_tools/0,
+         supported_tools_names/0,
+         detect/1,
+         deps/1,
+         full_release/1]).
 
 supported_tools() -> [beamup_build_tool_rebar3].
 supported_tools_names() -> lists:map(fun ({_, Name}) -> Name end, with_tools(name)).
@@ -18,3 +22,14 @@ end.
 
 deps(#{ tool := Tool, path := Path }) ->
   apply(Tool, deps, [Path]).
+
+full_release(#{ tool := Tool, path := Path } = Project) ->
+  full_release_config(Project),
+  Tool:full_release(Path).
+
+full_release_config(#{ tool := Tool, path := Path, commit := Vsn }) ->
+  Filename = filename:join(Path, Tool:release_config_filename()),
+  {ok, Config} = file:consult(Filename),
+  Config2 = Tool:release_config(Vsn, Config),
+  Config3 = lists:flatten([io_lib:fwrite("~p.~n", [Term]) || Term <- Config2]),
+  file:write_file(Filename, Config3).

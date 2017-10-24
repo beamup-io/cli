@@ -32,5 +32,5 @@ get_data(Port, Sofar, Handler) ->
         {Port, {exit_status, Code}} ->
           Code
       end,
-      {ExitCode, string:strip(lists:flatten(Sofar))}
+      {ExitCode, string:chomp(lists:flatten(Sofar))}
   end.
