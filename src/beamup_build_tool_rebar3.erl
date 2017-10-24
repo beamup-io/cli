@@ -5,7 +5,11 @@
          deps/1,
          full_release/1,
          release_config_filename/0,
-         release_config/2]).
+         release_config/2,
+         app_names/1,
+         app_path/1,
+         app_config_filename/1,
+         app_config/2]).
 
 name() -> rebar3.
 
@@ -45,3 +49,21 @@ release_config(Vsn, [H|T]) ->
 release_config(_Vsn, []) ->
   [].
 
+app_names(Path) ->
+  {ok, Names} = file:list_dir(filename:join(Path, "apps")),
+  Names.
+
+app_path(AppName) ->
+  filename:join("apps", AppName).
+
+app_config_filename(AppName) ->
+  filename:join("src", [AppName ++ ".app.src"]).
+
+app_config(Vsn, [{application, Name, Opts}]) ->
+  {application, Name, app_config(Vsn, Opts)};
+app_config(Vsn, [{vsn, _}|T]) ->
+  [{vsn, Vsn}|T];
+app_config(Vsn, [H|T]) ->
+  [H|app_config(Vsn, T)];
+app_config(_Vsn, []) ->
+  [].
