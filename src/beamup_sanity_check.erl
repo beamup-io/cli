@@ -2,9 +2,9 @@
 
 -export([check/1]).
 
-check(Path) ->
-  ok = ensure_clean_working_tree(Path),
-  ensure_supported_build_tool(Path).
+check(#{path := Path, tool := Tool}) ->
+  ensure_clean_working_tree(Path),
+  ensure_supported_build_tool(Tool).
 
 ensure_clean_working_tree(Path) ->
   Dirty = beamup_git:is_dirty(Path),
@@ -22,14 +22,10 @@ ensure_clean_working_tree(Path) ->
 is_empty([]) -> true;
 is_empty(_) -> false.
 
-ensure_supported_build_tool(Path) ->
-  Tool = beamup_build_tool:detect(Path),
-  case Tool of
-    false ->
-      io:format("Could not detect bulid tool.~n"),
-      io:format("Please make sure to use one of the supported tools: ~p~n",
-        [beamup_build_tool:supported_tools_names()]),
-      io:format("and that your project follows a standard (OTP) directory structure.~n"),
-      halt(1);
-    { Module, true } -> Module
-  end.
+ensure_supported_build_tool(false) ->
+  io:format("Could not detect bulid tool.~n"),
+  io:format("Please make sure to use one of the supported tools: ~p~n",
+    [beamup_build_tool:supported_tools_names()]),
+  io:format("and that your project follows a standard (OTP) directory structure.~n"),
+  halt(1);
+ensure_supported_build_tool(_Tool) -> ok.

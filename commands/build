@@ -1,10 +1,6 @@
 #!/usr/bin/env escript
 
 main(_) ->
-  ProjectName = os:getenv("PROJECT_NAME"),
-  ProjectPath = "/beamup/project/" ++ ProjectName,
-  {ok, CommitHash} = beamup_git:commit_hash(ProjectPath),
-  io:format("Last commit hash: ~p~n", [CommitHash]),
-  Tool = beamup_sanity_check:check(ProjectPath),
-  io:format("Fetching dependencies~n"),
-  beamup_build_tool:deps(Tool, ProjectPath).
+  Name = os:getenv("PROJECT_NAME"),
+  Path = "/beamup/project/" ++ Name,
+  beamup_build:run(Path).

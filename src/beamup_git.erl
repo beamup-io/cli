@@ -5,8 +5,8 @@
 commit_hash(Path) ->
   { ExitCode, Hash } = beamup_shell:cmd("git rev-list -1 HEAD -- " ++ Path),
   case ExitCode of
-    0 -> {ok, Hash};
-    _ -> {error, ExitCode, Hash}
+    0 -> Hash;
+    _ -> error
   end.
 
 untracked_files(Path) ->
