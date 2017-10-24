@@ -1,16 +1,20 @@
 -module(beamup_shell).
 
--export([cmd/2, cmd/1]).
+-export([cmd/3, cmd/2, cmd/1]).
 
 cmd(Command) -> cmd(Command, []).
 cmd(Command, Options) ->
-  Port = open_port({spawn, Command}, [stream, in, eof, hide, exit_status] ++ Options),
-  get_data(Port, []).
+  cmd(Command, Options, fun (_) -> ok end).
+cmd(Command, Options, Handler) ->
+  Port = open_port({spawn, Command},
+    lists:flatten([stream, eof, exit_status, Options])),
+  get_data(Port, [], Handler).
 
-get_data(Port, Sofar) ->
+get_data(Port, Sofar, Handler) ->
   receive
     {Port, {data, Bytes}} ->
-      get_data(Port, [Sofar|Bytes]);
+      Handler(Bytes),
+      get_data(Port, [Sofar|Bytes], Handler);
     {Port, eof} ->
       Port ! {self(), close},
       receive

@@ -5,4 +5,6 @@ main(_) ->
   ProjectPath = "/beamup/project/" ++ ProjectName,
   {ok, CommitHash} = beamup_git:commit_hash(ProjectPath),
   io:format("Last commit hash: ~p~n", [CommitHash]),
-  beamup_sanity_check:check(ProjectPath).
+  Tool = beamup_sanity_check:check(ProjectPath),
+  io:format("Fetching dependencies~n"),
+  beamup_build_tool:deps(Tool, ProjectPath).
