@@ -22,4 +22,7 @@ if [[ ! "$@" = "selftest" ]]; then
   cd /beamup/project/${PROJECT_NAME}
 fi
 
+# Enable shell history in OTP 20+
+export ERL_AFLAGS="-kernel shell_history enabled"
+
 exec $@
