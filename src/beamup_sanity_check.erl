@@ -15,7 +15,7 @@ ensure_clean_working_tree(Path) ->
       io:format("Dirty: ~p~n", [Dirty]),
       io:format("Untracked Files: ~p~n", [UntrackedFiles]),
       io:format(beamup_git:status(Path)),
-      io:format(standard_error, "Please commit or stash all changes.~n", []),
+      io:format(standard_error, "Please commit, stash or ignore all changes.~n", []),
       halt(1)
   end.
 

@@ -26,7 +26,7 @@ deps(#{ tool := Tool, path := Path }) ->
 full_release(#{ tool := Tool, path := Path } = Project) ->
   [app_config(Project, AppName) || AppName <- Tool:app_names(Path)],
   full_release_config(Project),
-  Tool:full_release(Path).
+  Tool:full_release(Project).
 
 full_release_config(#{ tool := Tool, path := Path, commit := Vsn }) ->
   Filename = filename:join(Path, Tool:release_config_filename()),
@@ -38,7 +38,6 @@ full_release_config(#{ tool := Tool, path := Path, commit := Vsn }) ->
 app_config(#{ tool := Tool, path := Path }, AppName) ->
   AppPath = filename:join(Path, Tool:app_path(AppName)),
   Filename = filename:join(AppPath, Tool:app_config_filename(AppName)),
-  io:format("APP CONFIG FILENAME: ~p~n", [Filename]),
   {ok, Config} = file:consult(Filename),
   AppVsn = beamup_git:commit_hash(AppPath),
   Config2 = Tool:app_config(AppVsn, Config),

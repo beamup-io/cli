@@ -9,4 +9,5 @@ run(Path) ->
   io:format("Fetching dependencies~n"),
   beamup_build_tool:deps(Project),
   io:format("Building full release~n"),
-  beamup_build_tool:full_release(Project).
+  TarFull = beamup_build_tool:full_release(Project),
+  beamup_store:put(Project, TarFull).

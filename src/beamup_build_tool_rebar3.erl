@@ -19,8 +19,9 @@ detect(Filenames) ->
 deps(Path) ->
   rebar3("get-deps", Path).
 
-full_release(Path) ->
-  rebar3("tar", Path).
+full_release(#{ name := Name, path := Path, commit := Vsn }) ->
+  rebar3("tar", Path),
+  filename:join(Path, ["_build/default/rel/", Name, "/", Name ++ "-" ++ Vsn ++ ".tar.gz"]).
 
 rebar3(Args, Path) ->
   {ExitCode, _} = beamup_shell:cmd("rebar3 " ++ Args,
