@@ -1,7 +1,29 @@
 #!/usr/bin/env escript
 
 main(_) ->
+  TestResult = test(),
+  hello(),
+  handle_test_result(TestResult).
+
+test() ->
+  SrcDir = "/host/test",
+  OutDir = "/beamup/test",
+  file:make_dir(OutDir),
+  {ok, Src} = file:list_dir(SrcDir),
+  [compile:file(filename:join(SrcDir, S), {outdir, OutDir}) || S <- Src],
+  io:format("~n"),
+  eunit:test({dir, OutDir}).
+
+hello() ->
+  io:format("~n"),
   io:format("  J: Hello, Mike.~n"),
-  io:format("  M: Hello, Joe. System working?~n"),
+  io:format("  M: Hello, Joe. System working?~n").
+
+handle_test_result(ok) ->
   io:format("  J: Seems to be.~n"),
-  io:format("  M: Okay, fine.~n~n").
+  io:format("  M: Okay, fine.~n~n"),
+  halt(0);
+
+handle_test_result(error) ->
+  io:format("  J: We've got an error in the system.~n~n"),
+  halt(1).
