@@ -30,16 +30,16 @@ container () {
   docker run --rm \
     --init \
     --net=host \
-    --entrypoint="/host/lib/entrypoint.sh" \
+    --entrypoint="/host/priv/entrypoint.sh" \
     -v "${cli_dir}/src:/host/src:ro" \
-    -v "${cli_dir}/lib:/host/lib:ro" \
+    -v "${cli_dir}/test:/host/test:ro" \
+    -v "${cli_dir}/priv:/host/priv:ro" \
     -v "${cli_dir}/commands:/host/commands:ro" \
     -v "${cwd}:/host/project/${project_name}:ro" \
     -v "${cache_dir}:/host/cache/" \
     -v "${cache_dir}/shell:/root/.cache/erlang-history/" \
     -v "${releases_dir}:/host/releases" \
     -e "PROJECT_NAME=${project_name}" \
-    -e "RELEASE_CHANNEL=$1" \
     -${interactive}t $image \
     "$cli_args"
 }
@@ -63,7 +63,7 @@ update () {
 
 cli_command=$1
 if [ -z "$cli_command" ]; then
-  echo "usage: beamup build|update|<script> [--version]"
+  echo "usage: beamup build|update|selftest|<script> [--version]"
   exit 1
 else
   shift

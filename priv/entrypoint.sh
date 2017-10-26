@@ -3,7 +3,7 @@
 set -e
 
 # Let Erlang know where to find modules
-cp /host/lib/.erlang ~/.erlang
+cp /host/priv/.erlang ~/.erlang
 
 # Fetch CLI command scripts from the mounted volume
 mkdir -p /beamup/commands/
