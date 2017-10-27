@@ -25,4 +25,7 @@ fi
 # Enable shell history in OTP 20+
 export ERL_AFLAGS="-kernel shell_history enabled"
 
+# The CLI commands are executable escripts
+export PATH="/beamup/commands:$PATH"
+
 exec $@
