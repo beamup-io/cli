@@ -56,9 +56,13 @@ version () {
 }
 
 update () {
-  echo "Run this to update the BeamUp CLI tool:"
-  echo "  cd $cli_dir"
-  echo "  git pull"
+  echo "Checking for updates..."
+
+  pushd "$cli_dir"
+  git pull
+  popd
+
+  echo "Done."
 }
 
 cli_command=$1
