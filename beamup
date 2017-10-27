@@ -16,7 +16,23 @@ mkdir -p $cache_dir $releases_dir
 # Use the name of the current folder as release name
 project_name=$(basename $cwd)
 
-image=beamup/builder:latest
+# TODO: Make Erlang version overridable
+BEAMUP_ERLANG_VERSION="20.1.2"
+
+cpu_arch=$(uname -m)
+case $cpu_arch in
+  arm32|armv7|armhfp)
+    BEAMUP_TARGET_ARCH=arm32v7
+    ;;
+  arm64|armv8|aarch64)
+    BEAMUP_TARGET_ARCH=arm64v8
+    ;;
+  *)
+    BEAMUP_TARGET_ARCH=amd64
+    ;;
+esac
+
+image="$BEAMUP_TARGET_ARCH/erlang:$BEAMUP_ERLANG_VERSION"
 
 # Detect if running in a TTY
 interactive=""
@@ -28,7 +44,6 @@ container () {
   echo "BeamUp booting container $image with command $cli_args for project $project_name"
 
   docker run --rm \
-    --init \
     --net=host \
     --entrypoint="/host/priv/entrypoint.sh" \
     -v "${cli_dir}/src:/host/src:ro" \
@@ -40,6 +55,8 @@ container () {
     -v "${cache_dir}/shell:/root/.cache/erlang-history/" \
     -v "${releases_dir}:/host/releases" \
     -e "PROJECT_NAME=${project_name}" \
+    -e "BEAMUP_TARGET_ARCH=${BEAMUP_TARGET_ARCH}" \
+    -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \
     -${interactive}t $image \
     "$cli_args"
 }
