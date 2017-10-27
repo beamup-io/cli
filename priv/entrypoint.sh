@@ -16,8 +16,8 @@ erlc -o /beamup/src/ /beamup/src/*.erl
 
 if [[ ! "$@" = "selftest" ]]; then
   echo "Syncing working tree to scratch location"
-  mkdir -p /beamup/project/${PROJECT_NAME}
-  rsync -r /host/project/${PROJECT_NAME}/ /beamup/project/${PROJECT_NAME}/
+  mkdir -p /beamup/project
+  cp -R /host/project/${PROJECT_NAME} /beamup/project/
 
   cd /beamup/project/${PROJECT_NAME}
 fi
