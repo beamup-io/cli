@@ -37,17 +37,22 @@ rebar3(Args, Path) ->
 release_config_filename() ->
   "rebar.config".
 
-release_config(Vsn, [{relx, H}|T]) ->
-  [{relx, release_config(Vsn, H)}|T];
-release_config(Vsn, [{release, {Name, _}, Deps}|T]) ->
-  [{release, {Name, Vsn}, Deps}|release_config(Vsn, T)];
-release_config(Vsn, [{dev_mode, _}|T]) ->
-  [{dev_mode, false}|release_config(Vsn, T)];
-release_config(Vsn, [{include_erts, _}|T]) ->
-  [{include_erts, true}|release_config(Vsn, T)];
-release_config(Vsn, [H|T]) ->
-  [H|release_config(Vsn, T)];
-release_config(_Vsn, []) ->
+release_config(Vsn, Config) ->
+  Config2 = beamup_util:override(erl_opts, 1, Config, {erl_opts, [debug_info]}),
+  Config3 = beamup_util:override(plugins, 1, Config2, {plugins, [rebar3_appup_plugin]}),
+  Config4 = beamup_util:override(relx, 1, dev_mode, 1, Config3, {dev_mode, false}),
+  Config5 = beamup_util:override(relx, 1, include_erts, 1, Config4, {include_erts, true}),
+  Config6 = beamup_util:override(relx, 1, generate_start_script, 1, Config5, {generate_start_script, true}),
+  Config7 = beamup_util:override(relx, 1, extended_start_script, 1, Config6, {extended_start_script, true}),
+  ensure_relx_version(Vsn, Config7).
+
+ensure_relx_version(Vsn, [{relx, H}|T]) ->
+  [{relx, ensure_relx_version(Vsn, H)}|T];
+ensure_relx_version(Vsn, [{release, {Name, _}, Deps}|T]) ->
+  [{release, {Name, Vsn}, Deps}|T];
+ensure_relx_version(Vsn, [H|T]) ->
+  [H|ensure_relx_version(Vsn, T)];
+ensure_relx_version(_Vsn, []) ->
   [].
 
 app_names(Path) ->
