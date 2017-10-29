@@ -44,6 +44,7 @@ container () {
   echo "BeamUp booting container $image with command $cli_args for project $project_name"
 
   docker run --rm \
+    --name="beamup-${project_name}" \
     --net=host \
     --entrypoint="/host/priv/entrypoint.sh" \
     -v "${cli_dir}/src:/host/src:ro" \
@@ -59,6 +60,12 @@ container () {
     -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \
     -${interactive}t $image \
     "$cli_args"
+}
+
+attach () {
+  echo "BeamUp attaching to container beamup-${project_name}"
+
+  docker exec -it "beamup-${project_name}" bash
 }
 
 version () {
@@ -84,7 +91,7 @@ update () {
 
 cli_command=$1
 if [ -z "$cli_command" ]; then
-  echo "usage: beamup build|update|selftest|<script> [--version]"
+  echo "usage: beamup build|attach|update|selftest|<script> [--version]"
   exit 1
 else
   shift
@@ -96,6 +103,9 @@ case $cli_command in
     ;;
   update)
     update
+    ;;
+  attach)
+    attach
     ;;
   *)
     container
