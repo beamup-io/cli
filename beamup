@@ -65,7 +65,16 @@ container () {
 attach () {
   echo "BeamUp attaching to container beamup-${project_name}"
 
+  set +e
   docker exec -it "beamup-${project_name}" bash
+  ret=$?
+  set -e
+
+  if [ $ret -ne 0 ]; then
+    echo "Are you inside the root directory of your project?"
+  fi
+
+  exit $ret
 }
 
 version () {
