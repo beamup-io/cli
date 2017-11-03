@@ -4,7 +4,7 @@
          supported_tools_names/0,
          detect/1,
          deps/1,
-         full_release/1]).
+         release/2]).
 
 supported_tools() -> [beamup_build_tool_rebar3].
 supported_tools_names() -> lists:map(fun ({_, Name}) -> Name end, with_tools(name)).
@@ -23,16 +23,29 @@ end.
 deps(#{ tool := Tool, path := Path }) ->
   apply(Tool, deps, [Path]).
 
-full_release(#{ tool := Tool, path := Path } = Project) ->
+release(#{ tool := Tool, path := Path } = Project, full) ->
   [app_config(Project, AppName) || AppName <- Tool:app_names(Path)],
   full_release_config(Project),
-  Tool:full_release(Project).
+  Tar = Tool:release(Project, full),
+  {full, Tar};
+release(#{ name := Name, tool := Tool, path := Path } = Project, {upgrade, UpFromVsn}) ->
+  PreviousTar = beamup_store:get(Project, {full, UpFromVsn}),
+  % PreviousPath = filename:join(Path, ["_build/default/rel/", Name]),
+  PreviousPath = filename:join(Path, ["_build/", Name]),
+  file:make_dir(PreviousPath),
+  {0, _} = beamup_shell:cmd("tar xvfz " ++ PreviousTar, [{cd, PreviousPath}]),
+  [app_config(Project, AppName) || AppName <- Tool:app_names(Path)],
+  full_release_config(Project),
+  Tar = Tool:release(Project, {upgrade, UpFromVsn, PreviousPath}),
+  io:format("Built upgrade tarball: ~p~n", [Tar]),
+  {upgrade, UpFromVsn, Tar}.
 
 full_release_config(#{ tool := Tool, path := Path, commit := Vsn }) ->
   Filename = filename:join(Path, Tool:release_config_filename()),
   {ok, Config} = file:consult(Filename),
   Config2 = Tool:release_config(Vsn, Config),
   Config3 = lists:flatten([io_lib:fwrite("~p.~n", [Term]) || Term <- Config2]),
+  io:format("Release Config: ~p~n", [Config2]),
   file:write_file(Filename, Config3).
 
 app_config(#{ tool := Tool, path := Path }, AppName) ->

@@ -3,7 +3,7 @@
 -export([name/0,
          detect/1,
          deps/1,
-         full_release/1,
+         release/2,
          release_config_filename/0,
          release_config/2,
          app_names/1,
@@ -19,11 +19,19 @@ detect(Filenames) ->
 deps(Path) ->
   rebar3("get-deps", Path).
 
-full_release(#{ name := Name, path := Path, commit := Vsn }) ->
+release(#{ name := Name, path := Path, commit := Vsn }, full) ->
   rebar3("tar", Path),
+  filename:join(Path, ["_build/default/rel/", Name, "/", Name ++ "-" ++ Vsn ++ ".tar.gz"]);
+
+release(#{ name := Name, path := Path, commit := Vsn }, {upgrade, UpFromVsn, PreviousPath}) ->
+  rebar3("appup generate --previous " ++ PreviousPath ++ " --previous_version " ++ UpFromVsn, Path),
+  rebar3("appup compile", Path),
+  rebar3("relup --name " ++ Name ++ " --upfrom " ++ UpFromVsn ++ " --relvsn " ++ Vsn, Path),
+  rebar3("appup tar", Path),
   filename:join(Path, ["_build/default/rel/", Name, "/", Name ++ "-" ++ Vsn ++ ".tar.gz"]).
 
 rebar3(Args, Path) ->
+  io:format("Running rebar3 ~p~n", [Args]),
   {ExitCode, _} = beamup_shell:cmd("rebar3 " ++ Args,
     [{cd, Path},
     {env, [{"REBAR_CACHE_DIR", "/host/cache/rebar3"},
