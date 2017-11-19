@@ -63,6 +63,7 @@ container () {
     -v "${cache_dir}/rebar3:/host/.cache/rebar3" \
     -v "${cache_dir}/shell:/root/.cache/erlang-history/" \
     -v "${releases_dir}:/host/releases" \
+    -e "TERM=dumb" \
     -e "PROJECT_NAME=${project_name}" \
     -e "BEAMUP_TARGET_ARCH=${BEAMUP_TARGET_ARCH}" \
     -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \

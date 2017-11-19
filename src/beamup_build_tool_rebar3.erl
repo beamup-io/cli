@@ -33,9 +33,7 @@ release(#{ name := Name, path := Path, commit := Vsn }, {upgrade, UpFromVsn, Pre
 rebar3(Args, Path) ->
   io:format("Running rebar3 ~p~n", [Args]),
   {ExitCode, _} = beamup_shell:cmd("rebar3 " ++ Args,
-    [{cd, Path},
-    {env, [{"REBAR_CACHE_DIR", "/host/cache/rebar3"},
-           {"TERM", "dumb"}]}],
+    [{cd, Path}],
     fun(Bytes) -> io:put_chars(Bytes) end),
   case ExitCode of
     0 -> ok;
