@@ -59,8 +59,7 @@ container () {
     -v "${cli_dir}/priv:/host/priv:ro" \
     -v "${cli_dir}/commands:/host/commands:ro" \
     -v "${cwd}:/host/project/${project_name}:ro" \
-    -v "${cache_dir}:/host/cache/" \
-    -v "${cache_dir}/rebar3:/host/.cache/rebar3" \
+    -v "${cache_dir}/rebar3:/root/.cache/rebar3" \
     -v "${cache_dir}/shell:/root/.cache/erlang-history/" \
     -v "${releases_dir}:/host/releases" \
     -e "TERM=dumb" \
