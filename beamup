@@ -34,16 +34,23 @@ esac
 
 image="$BEAMUP_TARGET_ARCH/erlang:$BEAMUP_ERLANG_VERSION"
 
-# Detect if running in a TTY
-interactive=""
-if [ -t 0 ]; then
-  interactive="i"
-fi
-
 container () {
-  echo "BeamUp booting container $image with command $cli_args for project $project_name"
+  echo "BeamUp booting container $image with command $1 for project $project_name"
+
+  # Detect if running in a TTY
+  interactive=""
+  if [ -t 0 ]; then
+    interactive="i"
+  fi
+
+  # Detect if Docker ships with its own init system
+  init="--init"
+  if docker run --init 2>&1 | grep -q 'unknown flag'; then
+    init=""
+  fi
 
   docker run --rm \
+    ${init} \
     --name="beamup-${project_name}" \
     --net=host \
     --entrypoint="/host/priv/entrypoint.sh" \
@@ -53,20 +60,22 @@ container () {
     -v "${cli_dir}/commands:/host/commands:ro" \
     -v "${cwd}:/host/project/${project_name}:ro" \
     -v "${cache_dir}:/host/cache/" \
+    -v "${cache_dir}/rebar3:/host/.cache/rebar3" \
     -v "${cache_dir}/shell:/root/.cache/erlang-history/" \
     -v "${releases_dir}:/host/releases" \
     -e "PROJECT_NAME=${project_name}" \
     -e "BEAMUP_TARGET_ARCH=${BEAMUP_TARGET_ARCH}" \
     -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \
     -${interactive}t $image \
-    "$cli_args"
+    "$1"
 }
 
 attach () {
-  echo "BeamUp attaching to container beamup-${project_name}"
+  container="beamup-${project_name}"
+  echo "BeamUp attaching to container $container"
 
   set +e
-  docker exec -it "beamup-${project_name}" bash
+  docker exec -it "$container" bash
   ret=$?
   set -e
 
@@ -75,6 +84,12 @@ attach () {
   fi
 
   exit $ret
+}
+
+kill_container () {
+  container="beamup-${project_name}"
+  echo "BeamUp killing container $container"
+  docker kill "$container"
 }
 
 version () {
@@ -116,8 +131,11 @@ case $cli_command in
   attach)
     attach
     ;;
+  kill)
+    kill_container
+    ;;
   *)
-    container
+    container "$cli_args"
     ;;
 esac
 
