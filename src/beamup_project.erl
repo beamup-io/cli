@@ -4,10 +4,14 @@
 
 new(Path) ->
   #{path => Path,
-    name => path_to_name(Path),
-    commit => beamup_git:commit_hash(Path),
-    tool => beamup_build_tool:detect(Path),
-    branch => beamup_git:branch(Path)}.
+    name => name_from_path(Path),
+    architecture => architecture(),
+    branch => beamup_git:branch(Path),
+    version => beamup_git:commit_hash(Path),
+    tool => beamup_build_tool:detect(Path)}.
 
-path_to_name(Path) ->
-  lists:last(string:tokens(Path,"/")).
+name_from_path(Path) ->
+  lists:last(string:lexemes(Path,"/")).
+
+architecture() ->
+  list_to_binary(erlang:system_info(system_architecture)).
