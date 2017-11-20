@@ -8,13 +8,14 @@ cmd(Command, Options) ->
 cmd(Command, Options, Handler) ->
   Port = open_port({spawn, Command},
     lists:flatten([stream, eof, exit_status, Options])),
-  get_data(Port, [], Handler).
+  get_data(Port, <<>>, Handler).
 
 get_data(Port, Sofar, Handler) ->
   receive
     {Port, {data, Bytes}} ->
-      Handler(Bytes),
-      get_data(Port, [Sofar|Bytes], Handler);
+      Binary = list_to_binary(Bytes),
+      Handler(Binary),
+      get_data(Port, <<Sofar/binary, Binary/binary>>, Handler);
     {Port, eof} ->
       Port ! {self(), close},
       receive
@@ -29,8 +30,8 @@ get_data(Port, Sofar, Handler) ->
       end,
       ExitCode =
         receive
-        {Port, {exit_status, Code}} ->
-          Code
+          {Port, {exit_status, Code}} ->
+            Code
       end,
-      {ExitCode, string:chomp(lists:flatten(Sofar))}
+      {ExitCode, string:chomp(Sofar)}
   end.
