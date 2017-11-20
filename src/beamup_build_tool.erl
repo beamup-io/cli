@@ -28,17 +28,17 @@ release(#{ tool := Tool, path := Path } = Project, full) ->
   full_release_config(Project),
   Tar = Tool:release(Project, full),
   {full, Tar};
-release(#{ name := Name, tool := Tool, path := Path } = Project, {upgrade, UpFromVsn}) ->
-  PreviousTar = beamup_store:get(Project, {full, UpFromVsn}),
+release(#{ name := Name, tool := Tool, path := Path } = Project, {upgrade, UpFromVersion}) ->
+  PreviousTar = beamup_store:get(Project, {full, UpFromVersion}),
   % PreviousPath = filename:join(Path, ["_build/default/rel/", Name]),
   PreviousPath = filename:join(Path, <<"_build/", Name/binary>>),
   file:make_dir(PreviousPath),
   {0, _} = beamup_shell:cmd(<<"tar xvfz ", PreviousTar/binary>>, [{cd, PreviousPath}]),
   [app_config(Project, AppName) || AppName <- Tool:app_names(Path)],
   full_release_config(Project),
-  Tar = Tool:release(Project, {upgrade, UpFromVsn, PreviousPath}),
+  Tar = Tool:release(Project, {upgrade, UpFromVersion, PreviousPath}),
   io:format("Built upgrade tarball: ~p~n", [Tar]),
-  {upgrade, UpFromVsn, Tar}.
+  {upgrade, UpFromVersion, Tar}.
 
 full_release_config(#{ tool := Tool, path := Path, version := Version }) ->
   Filename = filename:join(Path, Tool:release_config_filename()),

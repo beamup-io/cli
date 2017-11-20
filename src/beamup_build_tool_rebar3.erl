@@ -43,8 +43,8 @@ release(#{ name := Name, path := Path, version := Version },
 
 rebar3(Args, Path) ->
   io:format("Running rebar3 ~p~n", [Args]),
-    [{cd, Path}],
   {ExitCode, _} = beamup_shell:cmd(<<"rebar3 ", Args/binary>>,
+    [{cd, Path}, {env, [{"DEBUG", "1"}]}],
     fun(Bytes) -> io:put_chars(Bytes) end),
   case ExitCode of
     0 -> ok;
@@ -54,22 +54,22 @@ rebar3(Args, Path) ->
 release_config_filename() ->
   <<"rebar.config">>.
 
-release_config(Vsn, Config) ->
+release_config(Version, Config) ->
   Config2 = beamup_util:override(erl_opts, 1, Config, {erl_opts, [debug_info]}),
   Config3 = beamup_util:override(plugins, 1, Config2, {plugins, [rebar3_appup_plugin]}),
   Config4 = beamup_util:override(relx, 1, dev_mode, 1, Config3, {dev_mode, false}),
   Config5 = beamup_util:override(relx, 1, include_erts, 1, Config4, {include_erts, true}),
   Config6 = beamup_util:override(relx, 1, generate_start_script, 1, Config5, {generate_start_script, true}),
   Config7 = beamup_util:override(relx, 1, extended_start_script, 1, Config6, {extended_start_script, true}),
-  ensure_relx_version(Vsn, Config7).
+  ensure_relx_version(Version, Config7).
 
-ensure_relx_version(Vsn, [{relx, H}|T]) ->
-  [{relx, ensure_relx_version(Vsn, H)}|T];
-ensure_relx_version(Vsn, [{release, {Name, _}, Deps}|T]) ->
-  [{release, {Name, Vsn}, Deps}|T];
-ensure_relx_version(Vsn, [H|T]) ->
-  [H|ensure_relx_version(Vsn, T)];
-ensure_relx_version(_Vsn, []) ->
+ensure_relx_version(Version, [{relx, H}|T]) ->
+  [{relx, ensure_relx_version(Version, H)}|T];
+ensure_relx_version(Version, [{release, {Name, _}, Deps}|T]) ->
+  [{release, {Name, Version}, Deps}|T];
+ensure_relx_version(Version, [H|T]) ->
+  [H|ensure_relx_version(Version, T)];
+ensure_relx_version(_Version, []) ->
   [].
 
 app_names(Path) ->
@@ -82,11 +82,11 @@ app_path(AppName) ->
 app_config_filename(AppName) ->
   filename:join(<<"src">>, <<AppName/binary, ".app.src">>).
 
-app_config(Vsn, [{application, Name, Opts}]) ->
-  {application, Name, app_config(Vsn, Opts)};
-app_config(Vsn, [{vsn, _}|T]) ->
-  [{vsn, Vsn}|T];
-app_config(Vsn, [H|T]) ->
-  [H|app_config(Vsn, T)];
-app_config(_Vsn, []) ->
+app_config(Version, [{application, Name, Opts}]) ->
+  {application, Name, app_config(Version, Opts)};
+app_config(Version, [{Version, _}|T]) ->
+  [{Version, Version}|T];
+app_config(Version, [H|T]) ->
+  [H|app_config(Version, T)];
+app_config(_Version, []) ->
   [].
