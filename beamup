@@ -7,10 +7,9 @@ cwd=$(pwd)
 cli_dir=$(dirname "$(readlink -f "$0")")
 
 # Setup temp directories
-# TODO: Upload to beamup release repository
-# instead of outputting to local file system
-cache_dir=/tmp/beamup/cache
-releases_dir=/tmp/beamup/releases
+tmp_dir=$(readlink -f "$cli_dir/../tmp")
+cache_dir="$tmp_dir/cache"
+releases_dir="$tmp_dir/releases"
 mkdir -p $cache_dir $releases_dir
 
 # Use the name of the current folder as release name
