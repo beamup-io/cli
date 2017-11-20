@@ -1,2 +1,14 @@
-SrcDir = "/beamup/src",
-code:add_path(SrcDir).
+% Don't output anything to stdio here
+BaseDir = "/beamup/builder",
+SrcDir = filename:join([BaseDir, "src"]),
+PathsFile = filename:join([BaseDir, "paths"]),
+true = code:add_path(SrcDir),
+case filelib:is_file(PathsFile) of
+  true ->
+    {ok, Paths} = file:read_file(PathsFile),
+    Paths2 = binary_to_list(Paths),
+    Paths3 = string:split(Paths2, " ", all),
+    [code:add_path(P) || P <- Paths3],
+    ok;
+  _ -> ok
+end.

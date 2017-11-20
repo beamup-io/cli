@@ -22,17 +22,17 @@ BEAMUP_ERLANG_VERSION="20.1.2"
 cpu_arch=$(uname -m)
 case $cpu_arch in
   arm32|armv7|armhfp)
-    BEAMUP_TARGET_ARCH=arm32v7
+    architecture=arm32v7
     ;;
   arm64|armv8|aarch64)
-    BEAMUP_TARGET_ARCH=arm64v8
+    architecture=arm64v8
     ;;
   *)
-    BEAMUP_TARGET_ARCH=amd64
+    architecture=amd64
     ;;
 esac
 
-image="$BEAMUP_TARGET_ARCH/erlang:$BEAMUP_ERLANG_VERSION"
+image="$architecture/erlang:$BEAMUP_ERLANG_VERSION"
 
 container () {
   echo "BeamUp booting container $image with command $1 for project $project_name"
@@ -53,18 +53,19 @@ container () {
     ${init} \
     --name="beamup-${project_name}" \
     --net=host \
-    --entrypoint="/host/priv/entrypoint.sh" \
-    -v "${cli_dir}/src:/host/src:ro" \
-    -v "${cli_dir}/test:/host/test:ro" \
-    -v "${cli_dir}/priv:/host/priv:ro" \
-    -v "${cli_dir}/commands:/host/commands:ro" \
+    --entrypoint="/host/builder/priv/entrypoint.sh" \
+    -v "${cli_dir}/rebar.config:/host/builder/rebar.config:ro" \
+    -v "${cli_dir}/src:/host/builder/src:ro" \
+    -v "${cli_dir}/test:/host/builder/test:ro" \
+    -v "${cli_dir}/priv:/host/builder/priv:ro" \
+    -v "${cli_dir}/commands:/host/builder/commands:ro" \
     -v "${cwd}:/host/project/${project_name}:ro" \
+    -v "${cache_dir}/builder:/beamup/builder/_build" \
     -v "${cache_dir}/rebar3:/root/.cache/rebar3" \
     -v "${cache_dir}/shell:/root/.cache/erlang-history/" \
     -v "${releases_dir}:/host/releases" \
     -e "TERM=dumb" \
-    -e "PROJECT_NAME=${project_name}" \
-    -e "BEAMUP_TARGET_ARCH=${BEAMUP_TARGET_ARCH}" \
+    -e "BEAMUP_PROJECT_NAME=${project_name}" \
     -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \
     -${interactive}t $image \
     "$1"

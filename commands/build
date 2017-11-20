@@ -1,6 +1,14 @@
 #!/usr/bin/env escript
 
 main(_) ->
-  Name = os:getenv("PROJECT_NAME"),
-  Path = "/beamup/project/" ++ Name,
-  beamup_build:run(Path).
+  Name = env("BEAMUP_PROJECT_NAME"),
+  Path = <<"/beamup/project/", Name/binary>>,
+  StoreCredentials = #{url => env("BEAMUP_STORE_URL"),
+                       secret => env("BEAMUP_STORE_SECRET")},
+  beamup:run(Path, StoreCredentials).
+
+env(Key) ->
+  case os:getenv(Key) of
+    false -> throw("Please set environment variable " ++ Key);
+    Val -> list_to_binary(Val)
+  end.
