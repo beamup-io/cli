@@ -18,8 +18,8 @@ project_name=$(basename $cwd)
 # TODO: Make Erlang version overridable
 BEAMUP_ERLANG_VERSION="20.1.2"
 
-cpu_arch=$(uname -m)
-case $cpu_arch in
+raw_architecture=$(uname -m)
+case $raw_architecture in
   arm32|armv7|armhfp)
     architecture=arm32v7
     ;;

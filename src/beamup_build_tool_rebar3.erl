@@ -50,9 +50,10 @@ release_config(Version, Config) ->
   Config3 = beamup_util:override(plugins, 1, Config2, {plugins, [rebar3_appup_plugin]}),
   Config4 = beamup_util:override(relx, 1, dev_mode, 1, Config3, {dev_mode, false}),
   Config5 = beamup_util:override(relx, 1, include_erts, 1, Config4, {include_erts, true}),
-  Config6 = beamup_util:override(relx, 1, generate_start_script, 1, Config5, {generate_start_script, true}),
-  Config7 = beamup_util:override(relx, 1, extended_start_script, 1, Config6, {extended_start_script, true}),
-  ensure_relx_version(Version, Config7).
+  Config6 = beamup_util:override(relx, 1, include_erts, 1, Config5, {include_source, false}),
+  Config7 = beamup_util:override(relx, 1, generate_start_script, 1, Config6, {generate_start_script, true}),
+  Config8 = beamup_util:override(relx, 1, extended_start_script, 1, Config7, {extended_start_script, true}),
+  ensure_relx_version(Version, Config8).
 
 ensure_relx_version(Version, [{relx, H}|T]) ->
   [{relx, ensure_relx_version(Version, H)}|T];
@@ -87,7 +88,7 @@ app_config(_Version, []) ->
 rebar3(Args, Path) ->
   io:format("Running rebar3 ~p~n", [Args]),
   {ExitCode, _} = beamup_shell:cmd(<<"rebar3 ", Args/binary>>,
-    [{cd, Path}, {env, [{"DEBUG", "1"}]}],
+    [{cd, Path}],
     fun(Bytes) -> io:put_chars(Bytes) end),
   case ExitCode of
     0 -> ok;

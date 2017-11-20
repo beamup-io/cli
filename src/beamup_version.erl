@@ -1,11 +1,6 @@
 -module(beamup_version).
 
--export([previous/1, previous/2]).
-
-previous(#{path := Path} = Project) ->
-  StoredVersions = beamup_store:versions(Project),
-  LocalVersions = beamup_git:commit_hashes(Path),
-  previous(LocalVersions, StoredVersions).
+-export([previous/2]).
 
 previous([], _) -> false;
 previous(_, []) -> false;

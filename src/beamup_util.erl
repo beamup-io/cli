@@ -11,7 +11,7 @@ override(Key, N, TupleList, NewTuple) ->
       _ ->
         lists:keyreplace(Key, N, TupleList, NewTuple)
     end.
-  
+
 override(Key1, N1, Key2, N2, TupleList, NewTuple) ->
   case lists:keyfind(Key1, N1, TupleList) of
     false -> {Key1, [NewTuple]};

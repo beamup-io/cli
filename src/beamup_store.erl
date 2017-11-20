@@ -1,49 +1,62 @@
 -module(beamup_store).
 
--export([put/3,
-         get/2,
-         versions/1]).
+-export([new/2,
+         put/4,
+         get/3,
+         versions/2]).
 
-% NOTE: This is a mock implementation using the local fs
-% TODO: Replace with real release store API calls
+new(Url, Secret) ->
+  #{url => Url, secret => Secret}.
 
-put(Project, Tar, FullOrUpgrade) ->
-  Filename = to_filename(Project, FullOrUpgrade),
-  file:copy(Tar, filename:join("/host/releases", Filename)).
+put(Store, Project, TarPath, FullOrUpgrade) ->
+  Payload = {file, TarPath},
+  Version = maps:get(version, Project),
+  Path = to_path(Project),
+  Path2 = <<Path/binary, $/, Version/binary>>,
+  ReqHeaders = [{<<"Content-Type">>, <<"application/gzip">>}],
+  request(Store, post, Path2, Payload, ReqHeaders).
 
-get(Project, FullOrUpgrade) ->
-  Filename = to_filename(Project, FullOrUpgrade),
-  filename:join("/host/releases", Filename).
+get(Store, Project, FullOrUpgrade) ->
+  Version = maps:get(version, Project),
+  Path = to_path(Project),
+  Path2 = <<Path/binary, $/, Version/binary>>,
+  ReqHeaders = [{<<"Accept">>, <<"application/gzip">>}],
+  request(Store, get, Path2, <<>>, ReqHeaders).
 
-versions(#{name := Name}) ->
-  {ok, Filenames} = file:list_dir("/host/releases"),
-  lists:filtermap(fun(Filename) ->
-    case from_filename(Filename) of
-      {true, {Name, Vsn}} -> {true, Vsn};
-      _ -> false
-    end
-  end, Filenames).
+versions(Store, Project) ->
+  Path = to_path(Project),
+  from_etf(request(Store, get, Path, <<>>, [])).
 
-to_filename(#{commit := Vsn} = Project, full) ->
-  to_filename(Project, {full, Vsn});
-to_filename(#{name := Name}, {full, Vsn}) ->
-  Name ++ "-" ++ Vsn ++ "-full.tar.gz";
-to_filename(#{name := Name, commit := Commit}, {upgrade, UpFromVsn}) ->
-  Name ++ "-" ++ Commit ++ "-from-" ++ UpFromVsn ++ ".tar.gz".
+% Private
 
-from_filename(Filename) ->
-  FullSuffix = "-full.tar.gz",
-  TotalLength = string:length(Filename),
-  SuffixLength = string:length(FullSuffix),
-  HashLength = 40,
-  case string:find(Filename, FullSuffix, trailing) of
-    nomatch -> false;
-    _ -> case TotalLength > (HashLength + SuffixLength) of
-      true ->
-        PrefixLength = TotalLength - SuffixLength - HashLength - 1,
-        Name = string:substr(Filename, 1, PrefixLength),
-        Vsn = string:substr(Filename, PrefixLength + 2, HashLength),
-        {true, {Name, Vsn}};
-      false -> false
-    end
+request(Store, Verb, Path, Payload, ReqHeaders) ->
+  application:ensure_all_started(hackney),
+  ReqHeaders2 = ReqHeaders ++
+    [{<<"User-Agent">>, <<"beamup-builder/0.1 hackney/*">>}],
+  Options = [{follow_redirect, true},
+            {max_redirect, 5},
+            {basic_auth, {<<"key">>, maps:get(secret, Store)}}],
+  BaseUrl = maps:get(url, Store),
+  Url = <<BaseUrl/binary, Path/binary>>,
+  {ok, Status, ResHeaders, Client} = hackney:request(Verb, Url, ReqHeaders, Payload, Options),
+  {ok, Body} = hackney:body(Client),
+  io:format("Status: ~p, ResHeaders: ~p~n", [Status, ResHeaders]),
+  Body.
+
+from_etf(Body) ->
+  case Body of
+    <<>> -> ok;
+    Etf ->
+      Term = binary_to_term(Etf, [safe]),
+      io:format("Response: ~p~n", [Term]),
+      Term
   end.
+
+to_path(#{name := Name,
+          architecture := Architecture,
+          branch := Branch,
+          version := Version}) ->
+  <<$/, Name/binary,
+    "/release/",
+    Architecture/binary, $/,
+    Branch/binary>>.
