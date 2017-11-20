@@ -41,15 +41,6 @@ release(#{ name := Name, path := Path, version := Version },
                         Name/binary, $/,
                         Name/binary, $-, Version/binary, ".tar.gz">>).
 
-rebar3(Args, Path) ->
-  io:format("Running rebar3 ~p~n", [Args]),
-  {ExitCode, _} = beamup_shell:cmd(<<"rebar3 ", Args/binary>>,
-    [{cd, Path}, {env, [{"DEBUG", "1"}]}],
-    fun(Bytes) -> io:put_chars(Bytes) end),
-  case ExitCode of
-    0 -> ok;
-    _ -> throw(rebar3_error)
-  end.
 
 release_config_filename() ->
   <<"rebar.config">>.
@@ -66,7 +57,7 @@ release_config(Version, Config) ->
 ensure_relx_version(Version, [{relx, H}|T]) ->
   [{relx, ensure_relx_version(Version, H)}|T];
 ensure_relx_version(Version, [{release, {Name, _}, Deps}|T]) ->
-  [{release, {Name, Version}, Deps}|T];
+  [{release, {Name, binary_to_list(Version)}, Deps}|T];
 ensure_relx_version(Version, [H|T]) ->
   [H|ensure_relx_version(Version, T)];
 ensure_relx_version(_Version, []) ->
@@ -90,3 +81,15 @@ app_config(Version, [H|T]) ->
   [H|app_config(Version, T)];
 app_config(_Version, []) ->
   [].
+
+% Private
+
+rebar3(Args, Path) ->
+  io:format("Running rebar3 ~p~n", [Args]),
+  {ExitCode, _} = beamup_shell:cmd(<<"rebar3 ", Args/binary>>,
+    [{cd, Path}, {env, [{"DEBUG", "1"}]}],
+    fun(Bytes) -> io:put_chars(Bytes) end),
+  case ExitCode of
+    0 -> ok;
+    _ -> throw(rebar3_error)
+  end.
