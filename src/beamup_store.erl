@@ -16,18 +16,29 @@ put(Store, Project, TarPath, FullOrUpgrade) ->
   ReqHeaders = [{<<"Content-Type">>, <<"application/gzip">>}],
   request(Store, post, Path2, Payload, ReqHeaders).
 
-get(Store, Project, FullOrUpgrade) ->
-  Version = maps:get(version, Project),
+get(Store, Project, Version) ->
   Path = to_path(Project),
   Path2 = <<Path/binary, $/, Version/binary>>,
   ReqHeaders = [{<<"Accept">>, <<"application/gzip">>}],
-  request(Store, get, Path2, <<>>, ReqHeaders).
+  Blob = request(Store, get, Path2, <<>>, ReqHeaders),
+  TempPath = temp_file_path(Version),
+  ok = file:write_file(TempPath, Blob),
+  TempPath.
 
 versions(Store, Project) ->
   Path = to_path(Project),
-  from_etf(request(Store, get, Path, <<>>, [])).
+  List = from_etf(request(Store, get, Path, <<>>, [])),
+  case List of
+    ok -> [];
+    _ -> List
+  end.
 
 % Private
+
+temp_file_path(Version) ->
+  Dir = <<"/tmp/beamup/releases/">>,
+  filelib:ensure_dir(Dir),
+  <<Dir/binary, Version/binary>>.
 
 request(Store, Verb, Path, Payload, ReqHeaders) ->
   application:ensure_all_started(hackney),
@@ -38,7 +49,7 @@ request(Store, Verb, Path, Payload, ReqHeaders) ->
             {basic_auth, {<<"key">>, maps:get(secret, Store)}}],
   BaseUrl = maps:get(url, Store),
   Url = <<BaseUrl/binary, Path/binary>>,
-  {ok, Status, ResHeaders, Client} = hackney:request(Verb, Url, ReqHeaders, Payload, Options),
+  {ok, Status, ResHeaders, Client} = hackney:request(Verb, Url, ReqHeaders2, Payload, Options),
   {ok, Body} = hackney:body(Client),
   io:format("Status: ~p, ResHeaders: ~p~n", [Status, ResHeaders]),
   Body.

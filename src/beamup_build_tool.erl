@@ -4,7 +4,8 @@
          supported_tools_names/0,
          detect/1,
          deps/1,
-         release/2]).
+         release/2,
+         extract/1]).
 
 supported_tools() -> [beamup_build_tool_rebar3].
 supported_tools_names() -> lists:map(fun ({_, Name}) -> Name end, with_tools(name)).
@@ -55,3 +56,7 @@ app_config(#{ tool := Tool, path := Path }, AppName) ->
   AppVersion = beamup_git:commit_hash(AppPath),
   Config2 = Tool:app_config(AppVersion, Config),
   file:write_file(Filename, io_lib:fwrite("~p.~n", [Config2])).
+
+extract(TarPath) ->
+  PreviousDir = filename:dirname(TarPath),
+  {0, _} = beamup_shell:cmd(<<"tar xvfz ", TarPath/binary>>, [{cd, PreviousDir}]).
