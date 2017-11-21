@@ -37,7 +37,8 @@ run(Path, Url, Secret) ->
   beamup_shell:cmd(<<"ls /beamup/project/myrel/_build">>, [], Log),
   beamup_shell:cmd(<<"ls /beamup/project/myrel/_build/default">>, [], Log),
   beamup_shell:cmd(<<"ls /beamup/project/myrel/_build/default/rel/myrel">>, [], Log),
-  lists:map(fun beamup_build_tool:extract/1, PreviousReleases).
+  ExtractedReleases = lists:map(fun beamup_build_tool:extract/1, PreviousReleases),
+  lists:map(fun (Prev) -> beamup_build_tool:appup(Project, Prev) end, ExtractedReleases),
 
-  % io:format("Uploading full release to store~n"),
-  % beamup_store:put(Store, Project, TarPath, full).
+  io:format("Uploading full release to store~n"),
+  beamup_store:put(Store, Project, TarPath, full).

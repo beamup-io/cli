@@ -9,7 +9,8 @@
          app_names/1,
          app_path/1,
          app_config_filename/1,
-         app_config/2]).
+         app_config/2,
+         appup/2]).
 
 name() -> rebar3.
 
@@ -76,19 +77,27 @@ app_config_filename(AppName) ->
 
 app_config(Version, [{application, Name, Opts}]) ->
   {application, Name, app_config(Version, Opts)};
-app_config(Version, [{Version, _}|T]) ->
-  [{Version, Version}|T];
+app_config(Version, [{vsn, _}|T]) ->
+  [{vsn, binary_to_list(Version)}|T];
 app_config(Version, [H|T]) ->
   [H|app_config(Version, T)];
 app_config(_Version, []) ->
   [].
 
+appup(#{path := Path}, PreviousReleaseDir) ->
+  rebar3(<<"appup generate --previous ",
+           PreviousReleaseDir/binary>>, Path, verbose).
+
 % Private
 
 rebar3(Args, Path) ->
+  rebar3(Args, Path, []).
+rebar3(Args, Path, verbose) ->
+  rebar3(Args, Path, [{env, [{"DEBUG", "1"}]}]);
+rebar3(Args, Path, Opts) ->
   io:format("Running rebar3 ~p~n", [Args]),
   {ExitCode, _} = beamup_shell:cmd(<<"rebar3 ", Args/binary>>,
-    [{cd, Path}],
+    [{cd, Path}] ++ Opts,
     fun(Bytes) -> io:put_chars(Bytes) end),
   case ExitCode of
     0 -> ok;

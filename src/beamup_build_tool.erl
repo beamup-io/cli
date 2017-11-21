@@ -5,7 +5,8 @@
          detect/1,
          deps/1,
          release/2,
-         extract/1]).
+         extract/1,
+         appup/2]).
 
 supported_tools() -> [beamup_build_tool_rebar3].
 supported_tools_names() -> lists:map(fun ({_, Name}) -> Name end, with_tools(name)).
@@ -55,8 +56,18 @@ app_config(#{ tool := Tool, path := Path }, AppName) ->
   {ok, Config} = file:consult(Filename),
   AppVersion = beamup_git:commit_hash(AppPath),
   Config2 = Tool:app_config(AppVersion, Config),
+  io:format("App ~p config:~n~p~n", [AppName, Config2]),
   file:write_file(Filename, io_lib:fwrite("~p.~n", [Config2])).
 
 extract(TarPath) ->
-  PreviousDir = filename:dirname(TarPath),
-  {0, _} = beamup_shell:cmd(<<"tar xvfz ", TarPath/binary>>, [{cd, PreviousDir}]).
+  Version = filename:basename(TarPath, ".tar.gz"),
+  ParentDir = filename:dirname(TarPath),
+  TargetDir = filename:join([ParentDir, Version]),
+  io:format("TargetDir: ~p~n", [TargetDir]),
+  ok = filelib:ensure_dir(<<TargetDir/binary, $/>>),
+  beamup_shell:cmd(<<"ls -la /tmp/beamup/releases">>, [], fun(Bytes) -> io:put_chars(Bytes) end),
+  {0, _} = beamup_shell:cmd(<<"tar xvfz ", TarPath/binary>>, [{cd, TargetDir}]),
+  TargetDir.
+
+appup(Project = #{tool := Tool}, PreviousReleaseDir) ->
+  Tool:appup(Project, PreviousReleaseDir).

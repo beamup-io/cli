@@ -21,7 +21,7 @@ get(Store, Project, Version) ->
   Path2 = <<Path/binary, $/, Version/binary>>,
   ReqHeaders = [{<<"Accept">>, <<"application/gzip">>}],
   Blob = request(Store, get, Path2, <<>>, ReqHeaders),
-  TempPath = temp_file_path(Version),
+  TempPath = temp_tar_path(Version),
   ok = file:write_file(TempPath, Blob),
   TempPath.
 
@@ -35,10 +35,10 @@ versions(Store, Project) ->
 
 % Private
 
-temp_file_path(Version) ->
+temp_tar_path(Version) ->
   Dir = <<"/tmp/beamup/releases/">>,
   filelib:ensure_dir(Dir),
-  <<Dir/binary, Version/binary>>.
+  <<Dir/binary, Version/binary, ".tar.gz">>.
 
 request(Store, Verb, Path, Payload, ReqHeaders) ->
   application:ensure_all_started(hackney),
