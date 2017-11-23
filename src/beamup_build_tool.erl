@@ -4,9 +4,11 @@
          supported_tools_names/0,
          detect/1,
          deps/1,
-         release/2,
-         extract/1,
-         appup/2]).
+         compile/1,
+         appup/2,
+         relup/2,
+         tar/1,
+         extract/1]).
 
 supported_tools() -> [beamup_build_tool_rebar3].
 supported_tools_names() -> lists:map(fun ({_, Name}) -> Name end, with_tools(name)).
@@ -25,24 +27,21 @@ end.
 deps(#{ tool := Tool, path := Path }) ->
   apply(Tool, deps, [Path]).
 
-release(#{ tool := Tool, path := Path } = Project, full) ->
+compile(#{ tool := Tool, path := Path } = Project) ->
   [app_config(Project, AppName) || AppName <- Tool:app_names(Path)],
-  full_release_config(Project),
-  Tar = Tool:release(Project, full),
-  {full, Tar};
-release(#{ name := Name, tool := Tool, path := Path } = Project, {upgrade, UpFromVersion}) ->
-  PreviousTar = beamup_store:get(Project, {full, UpFromVersion}),
-  % PreviousPath = filename:join(Path, ["_build/default/rel/", Name]),
-  PreviousPath = filename:join(Path, <<"_build/", Name/binary>>),
-  file:make_dir(PreviousPath),
-  {0, _} = beamup_shell:cmd(<<"tar xvfz ", PreviousTar/binary>>, [{cd, PreviousPath}]),
-  [app_config(Project, AppName) || AppName <- Tool:app_names(Path)],
-  full_release_config(Project),
-  Tar = Tool:release(Project, {upgrade, UpFromVersion, PreviousPath}),
-  io:format("Built upgrade tarball: ~p~n", [Tar]),
-  {upgrade, UpFromVersion, Tar}.
+  release_config(Project),
+  Tool:compile(Project).
 
-full_release_config(#{ tool := Tool, path := Path, version := Version }) ->
+appup(Project = #{tool := Tool}, PreviousRelease) ->
+  Tool:appup(Project, PreviousRelease).
+
+relup(#{ tool := Tool } = Project, PreviousRelease) ->
+  Tool:relup(Project, PreviousRelease).
+
+tar(#{ tool := Tool } = Project) ->
+  Tool:tar(Project).
+
+release_config(#{ tool := Tool, path := Path, version := Version }) ->
   Filename = filename:join(Path, Tool:release_config_filename()),
   {ok, Config} = file:consult(Filename),
   Config2 = Tool:release_config(Version, Config),
@@ -68,6 +67,3 @@ extract(TarPath) ->
   beamup_shell:cmd(<<"ls -la /tmp/beamup/releases">>, [], fun(Bytes) -> io:put_chars(Bytes) end),
   {0, _} = beamup_shell:cmd(<<"tar xvfz ", TarPath/binary>>, [{cd, TargetDir}]),
   TargetDir.
-
-appup(Project = #{tool := Tool}, PreviousReleaseDir) ->
-  Tool:appup(Project, PreviousReleaseDir).

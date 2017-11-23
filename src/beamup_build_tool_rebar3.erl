@@ -3,14 +3,16 @@
 -export([name/0,
          detect/1,
          deps/1,
-         release/2,
+         compile/1,
+         appup/2,
+         relup/2,
+         tar/1,
          release_config_filename/0,
          release_config/2,
          app_names/1,
          app_path/1,
          app_config_filename/1,
-         app_config/2,
-         appup/2]).
+         app_config/2]).
 
 name() -> rebar3.
 
@@ -20,28 +22,35 @@ detect(Filenames) ->
 deps(Path) ->
   rebar3(<<"get-deps">>, Path).
 
-release(#{ name := Name, path := Path, version := Version }, full) ->
-  rebar3(<<"tar">>, Path),
-  filename:join(Path, <<"_build/default/rel/",
-                        Name/binary, $/,
-                        Name/binary, $-,
-                        Version/binary, ".tar.gz">>);
+compile(#{ path := Path }) ->
+  rebar3(<<"release">>, Path).
 
-release(#{ name := Name, path := Path, version := Version },
-        {upgrade, UpFromVersion, PreviousPath}) ->
-  rebar3(<<"appup generate --previous ",
-           PreviousPath/binary,
-           " --previous_version ",
-           UpFromVersion/binary>>, Path),
-  rebar3(<<"appup compile">>, Path),
-  rebar3(<<"relup --name ", Name/binary,
-           " --upfrom ", UpFromVersion/binary,
-           " --relVersion ", Version/binary>>, Path),
+appup(#{path := CurrentPath}, #{path := PreviousPath}) ->
+  rebar3(<<"appup generate",
+           " --previous ", PreviousPath/binary>>,
+         CurrentPath, verbose).
+
+relup(#{ path := CurrentPath, name := Name }, #{path := PreviousPath, version := PreviousVersion}) ->
+  % the relup provider expects the previous release in
+  % /beamup/project/myrel/_build/default/rel/myrel/lib/myrel-Vsn/ebin
+  % So copy the previous releases' lib dir over there
+  beamup_shell:cmd(<<"cp -vR ",
+                     PreviousPath/binary, "/lib/*",
+                     " ",
+                     CurrentPath/binary, "/_build/default/rel/", Name/binary, "/lib/">>,
+                   [], fun(B) -> io:put_chars(B) end),
+
+  rebar3(<<"relup",
+           " --upfrom ", PreviousVersion/binary,
+           " --lib-dir ", PreviousPath/binary>>,
+         CurrentPath, verbose).
+
+tar(#{ name := Name, path := Path, version := Version }) ->
   rebar3(<<"appup tar">>, Path),
   filename:join(Path, <<"_build/default/rel/",
                         Name/binary, $/,
-                        Name/binary, $-, Version/binary, ".tar.gz">>).
-
+                        Name/binary, $-,
+                        Version/binary, ".tar.gz">>).
 
 release_config_filename() ->
   <<"rebar.config">>.
@@ -83,10 +92,6 @@ app_config(Version, [H|T]) ->
   [H|app_config(Version, T)];
 app_config(_Version, []) ->
   [].
-
-appup(#{path := Path}, PreviousReleaseDir) ->
-  rebar3(<<"appup generate --previous ",
-           PreviousReleaseDir/binary>>, Path, verbose).
 
 % Private
 
