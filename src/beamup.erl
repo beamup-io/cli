@@ -18,13 +18,7 @@ run(Path, Url, Secret) ->
   io:format("Commits by branch: ~p~n", [beamup_git:commit_hashes_by_branches(Path)]),
   io:format("Versions in store: ~p~n", [StoredVersions]),
 
-  io:format("Fetching dependencies~n"),
-  beamup_build_tool:deps(Project),
-  io:format("~n~nDone fetching dependencies~n~n"),
-
-  io:format("Compiling project~n"),
-  beamup_build_tool:compile(Project),
-  io:format("~n~nDone compiling project~n~n"),
+  beamup_build:full(Project),
 
   Download = fun(V) ->
     beamup_store:get(Store, Project, V)
@@ -39,31 +33,16 @@ run(Path, Url, Secret) ->
   PreviousTars),
   io:format("Extracted previous releases: ~p~n~n", [ExtractedReleases]),
 
-  ToMetadata = fun(Path) ->
-    {ok, [[{release, Name, Version, _, _, _}]]} = file:consult(filename:join([Path, "releases", "RELEASES"])),
-    #{path => Path,
+  ToMetadata = fun(PreviousPath) ->
+    {ok, [[{release, Name, Version, _, _, _}]]} = file:consult(filename:join([PreviousPath, "releases", "RELEASES"])),
+    #{path => PreviousPath,
     name => list_to_binary(Name),
     version => list_to_binary(Version)}
   end,
   PreviousReleases = lists:map(ToMetadata, ExtractedReleases),
   io:format("Previous releases: ~p~n~n", [PreviousReleases]),
 
-  % TODO: Generate appups and relups that know
-  % how to upgrade from multiple releases.
-  % For now, just build upgrades from a single release.
-  case PreviousReleases of
-    [SinglePreviousRelease|_] ->
-      lists:map(fun (PreviousRelease) ->
-        io:format("~nGenerating appup for ~p~n~n", [PreviousRelease]),
-        beamup_build_tool:appup(Project, PreviousRelease),
-        io:format("~n~nDone generating appup for ~p~n~n", [PreviousRelease])
-      end, [SinglePreviousRelease]),
-
-      io:format("~n~nGenerating relup~n~n"),
-      beamup_build_tool:relup(Project, SinglePreviousRelease),
-      io:format("~n~nDone generating relup~n~n");
-    _ -> ok
-  end,
+  beamup_build:upgrade(Project, PreviousReleases),
 
   TarPath = beamup_build_tool:tar(Project),
 
