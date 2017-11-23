@@ -2,6 +2,7 @@
 
 -export([override/4, override/6]).
 
+% Update nested proplist (e.g. rebar.config)
 override(Key, N, TupleList, NewTuple) ->
     case lists:keyfind(Key, N, TupleList) of
       false -> TupleList ++ [NewTuple];

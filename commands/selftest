@@ -6,8 +6,9 @@ main(_) ->
   handle_test_result(TestResult).
 
 test() ->
-  SrcDir = "/host/test",
-  OutDir = "/beamup/test",
+  SrcDir = "/host/builder/test",
+  OutDir = "/beamup/builder/test",
+  code:add_path("/beamup/builder/_build/default/lib/builder/ebin"),
   file:make_dir(OutDir),
   {ok, Src} = file:list_dir(SrcDir),
   [compile:file(filename:join(SrcDir, S), {outdir, OutDir}) || S <- Src],
