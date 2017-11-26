@@ -33,6 +33,12 @@ esac
 
 image="$architecture/erlang:$BEAMUP_ERLANG_VERSION"
 
+# Detect if `docker run` supports a given flag ($1)
+# for graceful fallback when docker client is older
+is_docker_run_flag_supported() {
+  ! docker run "$1" 2>&1 | grep -q 'unknown flag'
+}
+
 container () {
   echo "BeamUp booting container $image with command $1 for project $project_name"
 
@@ -42,14 +48,19 @@ container () {
     interactive="i"
   fi
 
-  # Detect if Docker ships with its own init system
-  init="--init"
-  if docker run --init 2>&1 | grep -q 'unknown flag'; then
-    init=""
+  # Running with an init system allows killing the container with CTRL+C
+  init=""
+  if is_docker_run_flag_supported "--init"; then init="--init"; fi
+
+  # Mount /tmp inside the container as ramdisk to avoid SSD thrashing
+  tmpfs=""
+  if is_docker_run_flag_supported "--mount"; then
+    tmpfs="--mount type=tmpfs,destination=/tmp,tmpfs-mode=0755";
   fi
 
   docker run --rm \
     ${init} \
+    ${tmpfs} \
     --name="beamup-${project_name}" \
     --net=host \
     --entrypoint="/host/builder/priv/entrypoint.sh" \
