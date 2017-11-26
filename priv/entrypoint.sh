@@ -23,12 +23,7 @@ rebar3 compile
 # to be read and loaded by ~/.erlang
 rebar3 path > paths
 
-if [[ ! "$@" = "selftest" ]]; then
-  echo "Syncing working tree to scratch location"
-  mkdir -p /beamup/project
-  cp -R /host/project/${BEAMUP_PROJECT_NAME} /beamup/project/
-  cd /beamup/project/${BEAMUP_PROJECT_NAME}
-fi
+cd /host/project/${BEAMUP_PROJECT_NAME}
 
 # Enable shell history in OTP 20+
 export ERL_AFLAGS="-kernel shell_history enabled"

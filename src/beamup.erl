@@ -2,8 +2,8 @@
 
 -export([run/3]).
 
-run(Path, Url, Secret) ->
-  Project = beamup_project:new(Path),
+run(OriginalPath, Url, Secret) ->
+  Project = beamup_project:new(OriginalPath),
   Store = beamup_store:new(Url, Secret),
 
   beamup_sanity_check:check(Project),
@@ -14,8 +14,8 @@ run(Path, Url, Secret) ->
   io:format("Project: ~p~n", [Project]),
   io:format("Current version: ~p~n", [maps:get(version, Project)]),
   io:format("Current branch: ~p~n", [maps:get(branch, Project)]),
-  io:format("Local branches: ~p~n", [beamup_git:local_branches(Path)]),
-  io:format("Commits by branch: ~p~n", [beamup_git:commit_hashes_by_branches(Path)]),
+  io:format("Local branches: ~p~n", [beamup_git:local_branches(maps:get(path, Project))]),
+  io:format("Commits by branch: ~p~n", [beamup_git:commit_hashes_by_branches(maps:get(path, Project))]),
   io:format("Versions in store: ~p~n", [StoredVersions]),
 
   beamup_build:full(Project),
