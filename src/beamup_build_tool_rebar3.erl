@@ -4,7 +4,7 @@
          detect/1,
          deps/1,
          compile/1,
-         appup/2,
+         appups/2,
          relup/2,
          tar/1,
          release_config_filename/0,
@@ -26,15 +26,31 @@ deps(Path) ->
 compile(#{ path := Path }) ->
   rebar3(<<"release">>, Path).
 
-appup(#{path := CurrentPath}, #{path := PreviousPath}) ->
+appups(#{path := CurrentPath, name := Name}, #{path := PreviousPath}) ->
   rebar3(<<"appup generate",
            " --previous ", PreviousPath/binary>>,
-         CurrentPath, verbose).
+         CurrentPath, verbose),
+  % Move the *.appups from lib into the release directory
+  Apps = filename:join([CurrentPath, "_build", "default", "lib"]),
+  Appups = filelib:fold_files(Apps, "\\.appup$", true, fun (SourceAppupPath, Acc) ->
+    AppName = filename:basename(SourceAppupPath, ".appup"),
+    {ok, [{AppVersion, _, _}]} = file:consult(SourceAppupPath),
+    AppVersionBin = list_to_binary(AppVersion),
+    TargetApp = <<AppName/binary, $-, AppVersionBin/binary>>,
+    TargetAppupPath = filename:join([CurrentPath, "_build", "default", "rel",
+                   Name, "lib", TargetApp, "ebin", filename:basename(SourceAppupPath)]),
+    {ok, _} = file:copy(SourceAppupPath, TargetAppupPath),
+    [TargetAppupPath] ++ Acc
+  end, []).
 
-relup(#{ path := CurrentPath, name := Name }, #{path := PreviousPath, version := PreviousVersion}) ->
-  % the relup provider expects the previous release in
-  % /beamup/project/myrel/_build/default/rel/myrel/lib/myrel-Vsn/ebin
-  % So copy the previous releases' lib dir over there
+relup(#{path := CurrentPath, name := Name, version := CurrentVersion},
+      #{path := PreviousPath, version := PreviousVersion}) ->
+  io:format("Generating relup: ~p<>~p~n", [CurrentVersion, PreviousVersion]),
+  % Hack: Copy all apps of the previous releases' lib dir over
+  % to the current dir so that the relup provider finds them
+  % This is also the reason why we have all that project tree copying
+  % going on because having multiple apps in the current releases' lib dir
+  % confuses the relup generator.
   LocalLibPath = <<CurrentPath/binary, "/_build/default/rel/", Name/binary, "/lib/">>,
   beamup_shell:cmd(<<"cp -vR ",
                      PreviousPath/binary, "/lib/*",
@@ -42,12 +58,16 @@ relup(#{ path := CurrentPath, name := Name }, #{path := PreviousPath, version :=
                      LocalLibPath/binary>>),
 
   rebar3(<<"relup",
+           " --relname ", Name/binary,
+           " --relvsn ", CurrentVersion/binary,
            " --upfrom ", PreviousVersion/binary,
            " --lib-dir ", PreviousPath/binary>>,
-         CurrentPath, verbose).
+         CurrentPath, verbose),
+  io:format("Generated relup: ~p<>~p~n", [CurrentVersion, PreviousVersion]),
+  filename:join([CurrentPath, "_build", "default", "rel", Name, "releases", CurrentVersion, "relup"]).
 
 tar(#{ name := Name, path := Path, version := Version }) ->
-  rebar3(<<"appup tar">>, Path),
+  rebar3(<<"tar">>, Path),
   filename:join(Path, <<"_build/default/rel/",
                         Name/binary, $/,
                         Name/binary, $-,
@@ -61,7 +81,7 @@ release_config(Version, Config) ->
   Config3 = beamup_util:override(plugins, 1, Config2, {plugins, [rebar3_appup_plugin]}),
   Config4 = beamup_util:override(relx, 1, dev_mode, 1, Config3, {dev_mode, false}),
   Config5 = beamup_util:override(relx, 1, include_erts, 1, Config4, {include_erts, true}),
-  Config6 = beamup_util:override(relx, 1, include_erts, 1, Config5, {include_source, false}),
+  Config6 = beamup_util:override(relx, 1, include_src, 1, Config5, {include_src, false}),
   Config7 = beamup_util:override(relx, 1, generate_start_script, 1, Config6, {generate_start_script, true}),
   Config8 = beamup_util:override(relx, 1, extended_start_script, 1, Config7, {extended_start_script, true}),
   ensure_relx_version(Version, Config8).

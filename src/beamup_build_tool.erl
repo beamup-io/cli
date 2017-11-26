@@ -5,7 +5,7 @@
          detect/1,
          deps/1,
          compile/1,
-         appup/2,
+         appups/2,
          relup/2,
          tar/1,
          extract/1,
@@ -33,8 +33,8 @@ compile(#{ tool := Tool, path := Path } = Project) ->
   release_config(Project),
   Tool:compile(Project).
 
-appup(Project = #{tool := Tool}, PreviousRelease) ->
-  Tool:appup(Project, PreviousRelease).
+appups(Project = #{tool := Tool}, PreviousRelease) ->
+  Tool:appups(Project, PreviousRelease).
 
 relup(#{ tool := Tool } = Project, PreviousRelease) ->
   Tool:relup(Project, PreviousRelease).
