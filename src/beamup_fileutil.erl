@@ -10,7 +10,7 @@ temp_dir(Name) ->
   Dir.
 
 copy(From, To) ->
-  cmd(<<"cp -R ",
+  cmd(<<"cp -pr ",
         From/binary,
         " ",
         To/binary>>).

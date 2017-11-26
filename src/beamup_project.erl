@@ -18,9 +18,12 @@ path(Project) ->
   maps:get(path, Project).
 
 duplicate(Project) ->
+  OldPath = maps:get(path, Project),
   NewPath = beamup_fileutil:temp_dir(maps:get(name, Project)),
-  beamup_fileutil:copy(maps:get(path, Project), NewPath),
-  maps:update(path, NewPath, Project).
+  beamup_fileutil:copy(OldPath, NewPath),
+  NewProject = maps:update(path, NewPath, Project),
+  beamup_build_tool:update_paths(NewProject, OldPath),
+  NewProject.
 
 remove(Project) ->
   Dir = maps:get(path, Project),

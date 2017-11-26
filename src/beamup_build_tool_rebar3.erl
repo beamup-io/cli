@@ -12,7 +12,8 @@
          app_names/1,
          app_path/1,
          app_config_filename/1,
-         app_config/2]).
+         app_config/2,
+         update_paths/2]).
 
 name() -> rebar3.
 
@@ -34,11 +35,11 @@ relup(#{ path := CurrentPath, name := Name }, #{path := PreviousPath, version :=
   % the relup provider expects the previous release in
   % /beamup/project/myrel/_build/default/rel/myrel/lib/myrel-Vsn/ebin
   % So copy the previous releases' lib dir over there
+  LocalLibPath = <<CurrentPath/binary, "/_build/default/rel/", Name/binary, "/lib/">>,
   beamup_shell:cmd(<<"cp -vR ",
                      PreviousPath/binary, "/lib/*",
                      " ",
-                     CurrentPath/binary, "/_build/default/rel/", Name/binary, "/lib/">>,
-                   [], fun(B) -> io:put_chars(B) end),
+                     LocalLibPath/binary>>),
 
   rebar3(<<"relup",
            " --upfrom ", PreviousVersion/binary,
@@ -93,7 +94,60 @@ app_config(Version, [H|T]) ->
 app_config(_Version, []) ->
   [].
 
+% Rebar3 keeps a small file called "erlcinfo" in "_build/default/lib/myrel/.rebar3/erlcinfo"
+% which caches the last modified timestamp of the *.erl files, and their absolute path.
+% To avoid recompiling the whole project, we have to
+%   (i) keep timestamps intact when copying the project folder
+%   (ii) and re-write the absolute path to point to the copy
+update_paths(#{path := NewRootPath}, OldRootPath) ->
+  filelib:fold_files(NewRootPath, "erlcinfo$", true, fun(ErlcinfoFilename, _) ->
+    case file:read_file(ErlcinfoFilename) of
+      {ok, Bytes} ->
+        Term = binary_to_term(Bytes),
+        Term2 = update_erlcinfo_term(NewRootPath, OldRootPath, Term),
+        Bytes2 = term_to_binary(Term2, [{compressed, 2}]),
+        ok = file:write_file(ErlcinfoFilename, Bytes2);
+      _ -> ok
+    end
+  end, []).
+
 % Private
+
+update_erlcinfo_term(NewRootPath, OldRootPath, Term) ->
+  {erlcinfo, ErlcinfoVsn, {Vs, Es, InclDirs}} = Term,
+  UpdatePath = fun(Path) ->
+    update_path(binary_to_list(NewRootPath),
+                binary_to_list(OldRootPath),
+                Path)
+  end,
+  Vs2 = update_erlcinfo_vs(Vs, UpdatePath),
+  Es2 = update_erlcinfo_es(Es, UpdatePath),
+  InclDirs2 = lists:map(UpdatePath, InclDirs),
+  {erlcinfo, ErlcinfoVsn, {Vs2, Es2, InclDirs2}}.
+
+update_path(NewRootPath, OldRootPath, Path) ->
+  MaybeRelative = string:prefix(Path, OldRootPath),
+  case MaybeRelative of
+    % Path may be /usr/local/lib...
+    nomatch -> Path;
+    MaybeRelative ->
+      case string:prefix(MaybeRelative, "/") of
+        nomatch -> MaybeRelative;
+        Relative -> filename:join([NewRootPath, Relative])
+    end
+  end.
+
+update_erlcinfo_vs([{Path, Date}|T], UpdatePath) ->
+  [{UpdatePath(Path), Date}|update_erlcinfo_vs(T, UpdatePath)];
+update_erlcinfo_vs([Other|T], UpdatePath) ->
+  [Other|update_erlcinfo_vs(T, UpdatePath)];
+update_erlcinfo_vs([], _) -> [].
+
+update_erlcinfo_es([{X, PathA, PathB, Y}|T], UpdatePath) ->
+  [{X, UpdatePath(PathA), UpdatePath(PathB), Y}|update_erlcinfo_es(T, UpdatePath)];
+update_erlcinfo_es([Other|T], UpdatePath) ->
+  [Other|update_erlcinfo_es(T, UpdatePath)];
+update_erlcinfo_es([], _) -> [].
 
 rebar3(Args, Path) ->
   rebar3(Args, Path, []).
