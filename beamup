@@ -75,7 +75,10 @@ container () {
     -v "${cache_dir}/shell:/root/.cache/erlang-history/" \
     -v "${releases_dir}:/host/releases" \
     -e "TERM=dumb" \
+    -e "DEBUG=${DEBUG}" \
     -e "BEAMUP_PROJECT_NAME=${project_name}" \
+    -e "BEAMUP_STORE_URL=${BEAMUP_STORE_URL}" \
+    -e "BEAMUP_STORE_SECRET=${BEAMUP_STORE_SECRET}" \
     -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \
     -${interactive}t $image \
     "$1"
