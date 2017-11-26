@@ -2,6 +2,7 @@
 
 -export([
   commit_hash/1,
+  commit_hash/2,
   branch/1,
   untracked_files/1,
   is_dirty/1,
@@ -11,7 +12,10 @@
   commit_hashes_by_branches/1]).
 
 commit_hash(Path) ->
-  {0, Hash} = beamup_shell:cmd(<<"git rev-list -1 HEAD -- ", Path/binary>>),
+  commit_hash(Path, Path).
+commit_hash(Path, ProjectRootPath) ->
+  {0, Hash} = beamup_shell:cmd(<<"git rev-list -1 HEAD -- ", Path/binary>>,
+                               [{cd, ProjectRootPath}]),
   Hash.
 
 commit_hashes(Path) ->
