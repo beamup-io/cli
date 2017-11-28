@@ -52,18 +52,24 @@ container () {
   init=""
   if is_docker_run_flag_supported "--init"; then init="--init"; fi
 
-  # Mount /tmp inside the container as ramdisk to avoid SSD thrashing
-  tmpfs=""
+  # Try to mount /tmp inside the container as ramdisk to avoid SSD thrashing
+  tmp_volume=""
   if is_docker_run_flag_supported "--mount"; then
-    tmpfs="--mount type=tmpfs,destination=/tmp,tmpfs-mode=0755";
+    tmp_volume="--mount type=tmpfs,destination=/tmp,tmpfs-mode=0755";
+  fi
+
+  # Bind-mount /tmp to ${cache_dir}/container/tmp in debug mode
+  if [ -n "$DEBUG" ] || [ -n "$BEAMUP_BIND_MOUNT_TMP" ]; then
+    tmp_volume="-v ${cache_dir}/container/tmp:/tmp"
+    rm -rf ${cache_dir}/container/tmp || true
   fi
 
   docker run --rm \
     ${init} \
-    ${tmpfs} \
     --name="beamup-${project_name}" \
     --net=host \
     --entrypoint="/host/builder/priv/entrypoint.sh" \
+    ${tmp_volume} \
     -v "${cli_dir}/rebar.config:/host/builder/rebar.config:ro" \
     -v "${cli_dir}/src:/host/builder/src:ro" \
     -v "${cli_dir}/test:/host/builder/test:ro" \
