@@ -65,7 +65,6 @@ extract(TarPath) ->
   TargetDir = filename:join([ParentDir, Version]),
   io:format("TargetDir: ~p~n", [TargetDir]),
   ok = filelib:ensure_dir(<<TargetDir/binary, $/>>),
-  beamup_shell:cmd(<<"ls -la /tmp/beamup/releases">>, [], fun(Bytes) -> io:put_chars(Bytes) end),
   {0, _} = beamup_shell:cmd(<<"tar xvfz ", TarPath/binary>>, [{cd, TargetDir}]),
   TargetDir.
 
