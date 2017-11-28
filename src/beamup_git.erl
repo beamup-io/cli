@@ -14,15 +14,16 @@
 commit_hash(Path) ->
   commit_hash(Path, Path).
 commit_hash(Path, ProjectRootPath) ->
-  {0, Hash} = beamup_shell:cmd(<<"git rev-list -1 HEAD -- ", Path/binary>>,
+  {0, Hash} = beamup_shell:cmd(<<"git rev-list -1 HEAD --format=%ct -- ",
+                                 Path/binary>>,
                                [{cd, ProjectRootPath}]),
-  Hash.
+  hd(format_hashes(Hash)).
 
 commit_hashes(Path) ->
   commit_hashes(Path, <<"HEAD">>).
 commit_hashes(Path, Branch) ->
-  {0, Hashes} = beamup_shell:cmd(<<"git rev-list ", Branch/binary, " --">>, [{cd, Path}]),
-  lines_to_list(Hashes).
+  {0, Hashes} = beamup_shell:cmd(<<"git rev-list ", Branch/binary, " --format=%ct --">>, [{cd, Path}]),
+  format_hashes(Hashes).
 
 commit_hashes_by_branches(Path) ->
   lists:map(fun(Branch) ->
@@ -57,3 +58,8 @@ status(Path) ->
 
 lines_to_list(Text) ->
   string:lexemes(Text, [$\n]).
+format_hashes(Text) when is_binary(Text) ->
+  format_hashes(lines_to_list(Text));
+format_hashes([<<"commit ", Hash/binary>>, Timestamp|T]) ->
+  [<<Timestamp/binary, $-, Hash/binary>>|format_hashes(T)];
+format_hashes([]) -> [].
