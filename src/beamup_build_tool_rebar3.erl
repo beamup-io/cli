@@ -26,21 +26,16 @@ deps(Path) ->
 compile(#{ path := Path }) ->
   rebar3(<<"release">>, Path).
 
-appups(#{path := CurrentPath, name := Name}, #{path := PreviousPath}) ->
+appups(#{path := CurrentPath, name := Name} = CurrentProject, #{path := PreviousPath}) ->
   rebar3(<<"appup generate",
            " --previous ", PreviousPath/binary>>,
          CurrentPath, verbose),
-  % Move the *.appups from lib into the release directory
+  % Recompile so that the generated appup files are added to the release
+  compile(CurrentProject),
+  % Copy the *.appups from lib into the release directory
   Apps = filename:join([CurrentPath, "_build", "default", "lib"]),
   Appups = filelib:fold_files(Apps, "\\.appup$", true, fun (SourceAppupPath, Acc) ->
-    AppName = filename:basename(SourceAppupPath, ".appup"),
-    {ok, [{AppVersion, _, _}]} = file:consult(SourceAppupPath),
-    AppVersionBin = list_to_binary(AppVersion),
-    TargetApp = <<AppName/binary, $-, AppVersionBin/binary>>,
-    TargetAppupPath = filename:join([CurrentPath, "_build", "default", "rel",
-                   Name, "lib", TargetApp, "ebin", filename:basename(SourceAppupPath)]),
-    {ok, _} = file:copy(SourceAppupPath, TargetAppupPath),
-    [TargetAppupPath] ++ Acc
+    [SourceAppupPath] ++ Acc
   end, []).
 
 relup(#{path := CurrentPath, name := Name, version := CurrentVersion},
@@ -56,18 +51,19 @@ relup(#{path := CurrentPath, name := Name, version := CurrentVersion},
                      PreviousPath/binary, "/lib/*",
                      " ",
                      LocalLibPath/binary>>),
-
+  % Evaluate any custom *.appup.src files
+  rebar3(<<"appup compile">>, CurrentPath),
   rebar3(<<"relup",
            " --relname ", Name/binary,
            " --relvsn ", CurrentVersion/binary,
            " --upfrom ", PreviousVersion/binary,
            " --lib-dir ", PreviousPath/binary>>,
-         CurrentPath, verbose),
+         CurrentPath),
   io:format("Generated relup: ~p<>~p~n", [CurrentVersion, PreviousVersion]),
   filename:join([CurrentPath, "_build", "default", "rel", Name, "releases", CurrentVersion, "relup"]).
 
 tar(#{ name := Name, path := Path, version := Version }) ->
-  rebar3(<<"tar">>, Path),
+  rebar3(<<"appup tar">>, Path),
   filename:join(Path, <<"_build/default/rel/",
                         Name/binary, $/,
                         Name/binary, $-,
