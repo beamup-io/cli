@@ -1,0 +1,6 @@
+#!/usr/bin/env escript
+
+main([ElixirVersion]) ->
+  ok = beamup_elixir:ensure_installed(ElixirVersion),
+  halt(0);
+main(_) -> halt(0).

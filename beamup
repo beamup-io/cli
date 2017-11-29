@@ -77,6 +77,7 @@ container () {
     -v "${cli_dir}/commands:/host/builder/commands:ro" \
     -v "${cwd}:/host/project/${project_name}:ro" \
     -v "${cache_dir}/builder:/beamup/builder/_build" \
+    -v "${cache_dir}/elixir:/elixir" \
     -v "${cache_dir}/rebar3:/root/.cache/rebar3" \
     -v "${cache_dir}/shell:/root/.cache/erlang-history/" \
     -v "${releases_dir}:/host/releases" \
@@ -86,6 +87,7 @@ container () {
     -e "BEAMUP_STORE_URL=${BEAMUP_STORE_URL}" \
     -e "BEAMUP_STORE_SECRET=${BEAMUP_STORE_SECRET}" \
     -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \
+    -e "BEAMUP_ELIXIR_VERSION=${BEAMUP_ELIXIR_VERSION}" \
     -${interactive}t $image \
     "$1"
 }

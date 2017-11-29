@@ -2,6 +2,18 @@
 
 set -e
 
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+
+# Enable shell history in OTP 20+
+export ERL_AFLAGS="-kernel shell_history enabled"
+
+# The CLI commands are executable escripts
+export PATH="/beamup/builder/commands:$PATH"
+
+# Add Elixir executables (iex, elixirc...)
+export PATH=/elixir/bin:$PATH
+
 # Let Erlang know where to find modules
 cp /host/builder/priv/.erlang ~/.erlang
 
@@ -25,10 +37,10 @@ rebar3 path > paths
 
 cd /host/project/${BEAMUP_PROJECT_NAME}
 
-# Enable shell history in OTP 20+
-export ERL_AFLAGS="-kernel shell_history enabled"
-
-# The CLI commands are executable escripts
-export PATH="/beamup/builder/commands:$PATH"
+# Optionally install Elixir
+if [ -n "$BEAMUP_ELIXIR_VERSION" ]; then
+  echo "Using Elixir $BEAMUP_ELIXIR_VERSION"
+  install_elixir $BEAMUP_ELIXIR_VERSION
+fi
 
 exec $@
