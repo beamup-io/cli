@@ -20,6 +20,42 @@ project_name=$(basename $cwd)
 # TODO: Make Erlang version overridable
 BEAMUP_ERLANG_VERSION="20.1.2"
 
+main () {
+  cli_command=$1
+  if [ -z "$cli_command" ]; then
+    echo "usage: beamup build|attach|update|selftest|<script> [--version]"
+    exit 1
+  else
+    shift
+  fi
+
+  case $cli_command in
+    --version)
+      version
+      ;;
+    update)
+      update
+      ;;
+    attach)
+      attach
+      ;;
+    kill)
+      kill_container
+      ;;
+    *)
+      run "$cli_args"
+      ;;
+  esac
+}
+
+run () {
+  if is_container; then
+    BEAMUP_PROJECT_DIR="$cwd" $cli_dir/priv/entrypoint.sh "$1"
+  else
+    container "$1"
+  fi
+}
+
 raw_architecture=$(uname -m)
 case $raw_architecture in
   arm32|armv7|armhfp)
@@ -34,15 +70,6 @@ case $raw_architecture in
 esac
 
 image="$architecture/erlang:$BEAMUP_ERLANG_VERSION"
-
-
-run () {
-  if is_container; then
-    BEAMUP_PROJECT_DIR="$cwd" $cli_dir/priv/entrypoint.sh "$1"
-  else
-    container "$1"
-  fi
-}
 
 # Detect if `docker run` supports a given flag ($1)
 # for graceful fallback when docker client is older
@@ -144,30 +171,5 @@ update () {
   echo "Done."
 }
 
-cli_command=$1
-if [ -z "$cli_command" ]; then
-  echo "usage: beamup build|attach|update|selftest|<script> [--version]"
-  exit 1
-else
-  shift
-fi
-
-case $cli_command in
-  --version)
-    version
-    ;;
-  update)
-    update
-    ;;
-  attach)
-    attach
-    ;;
-  kill)
-    kill_container
-    ;;
-  *)
-    run "$cli_args"
-    ;;
-esac
-
+main "$1"
 echo "" # Clean prompt
