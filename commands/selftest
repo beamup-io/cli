@@ -6,14 +6,12 @@ main(_) ->
   handle_test_result(TestResult).
 
 test() ->
-  SrcDir = "/host/builder/test",
-  OutDir = "/beamup/builder/test",
-  code:add_path("/beamup/builder/_build/default/lib/builder/ebin"),
-  file:make_dir(OutDir),
+  SrcDir = "/tmp/beamup/cli/test",
+  code:add_path("/tmp/beamup/cli/_build/default/lib/cli/ebin"),
   {ok, Src} = file:list_dir(SrcDir),
-  [compile:file(filename:join(SrcDir, S), {outdir, OutDir}) || S <- Src],
+  [compile:file(filename:join(SrcDir, S), {outdir, SrcDir}) || S <- Src],
   io:format("~n"),
-  eunit:test({dir, OutDir}).
+  eunit:test({dir, SrcDir}).
 
 hello() ->
   io:format("~n"),

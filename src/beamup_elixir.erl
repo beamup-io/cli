@@ -43,6 +43,6 @@ download(Url) ->
   ReqHeaders = [{<<"User-Agent">>, <<"beamup-builder/0.1 hackney/*">>}],
   Options = [{follow_redirect, true},
             {max_redirect, 5}],
-  {ok, Status, ResHeaders, Client} = hackney:request(get, Url, ReqHeaders, <<>>, Options),
+  {ok, _Status, _ResHeaders, Client} = hackney:request(get, Url, ReqHeaders, <<>>, Options),
   {ok, Body} = hackney:body(Client),
   Body.

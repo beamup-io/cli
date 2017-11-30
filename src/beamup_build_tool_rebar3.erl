@@ -26,7 +26,7 @@ deps(Path) ->
 compile(#{ path := Path }) ->
   rebar3(<<"release">>, Path).
 
-appups(#{path := CurrentPath, name := Name} = CurrentProject, #{path := PreviousPath}) ->
+appups(#{path := CurrentPath} = CurrentProject, #{path := PreviousPath}) ->
   rebar3(<<"appup generate",
            " --previous ", PreviousPath/binary>>,
          CurrentPath, verbose),
@@ -36,7 +36,8 @@ appups(#{path := CurrentPath, name := Name} = CurrentProject, #{path := Previous
   Apps = filename:join([CurrentPath, "_build", "default", "lib"]),
   Appups = filelib:fold_files(Apps, "\\.appup$", true, fun (SourceAppupPath, Acc) ->
     [SourceAppupPath] ++ Acc
-  end, []).
+  end, []),
+  Appups.
 
 relup(#{path := CurrentPath, name := Name, version := CurrentVersion},
       #{path := PreviousPath, version := PreviousVersion}) ->

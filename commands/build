@@ -1,10 +1,9 @@
 #!/usr/bin/env escript
 
 main(_) ->
-  Name = env("BEAMUP_PROJECT_NAME"),
   Url = env("BEAMUP_STORE_URL"),
   Secret = env("BEAMUP_STORE_SECRET"),
-  Path = <<"/host/project/", Name/binary>>,
+  Path = env("BEAMUP_PROJECT_DIR"),
   beamup:run(Path, Url, Secret).
 
 env(Key) ->

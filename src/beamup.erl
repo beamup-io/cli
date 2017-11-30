@@ -3,13 +3,14 @@
 -export([run/3]).
 
 run(OriginalPath, Url, Secret) ->
+  Tool = beamup_build_tool:detect(OriginalPath),
+  beamup_sanity_check:ensure_supported_build_tool(Tool),
+
   Project = beamup_project:new(OriginalPath),
+  beamup_sanity_check:ensure_clean_working_tree(beamup_project:path(Project)),
+
   Store = beamup_store:new(Url, Secret),
-
-  beamup_sanity_check:check(Project),
-
   StoredVersions = beamup_store:versions(Store, Project),
-
 
   io:format("Project: ~p~n", [Project]),
   io:format("Current version: ~p~n", [maps:get(version, Project)]),
@@ -47,4 +48,4 @@ run(OriginalPath, Url, Secret) ->
   TarPath = beamup_build_tool:tar(Project),
 
   io:format("Uploading full release to store~n"),
-  beamup_store:put(Store, Project, TarPath, full).
+  beamup_store:put(Store, Project, TarPath).

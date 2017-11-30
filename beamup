@@ -6,6 +6,8 @@ cli_args="${@}"
 cwd=$(pwd)
 cli_dir=$(dirname "$(readlink -f "$0")")
 
+source $cli_dir/priv/is_container.sh
+
 # Setup temp directories
 tmp_dir=$(readlink -f "$cli_dir/../tmp")
 cache_dir="$tmp_dir/cache"
@@ -32,6 +34,15 @@ case $raw_architecture in
 esac
 
 image="$architecture/erlang:$BEAMUP_ERLANG_VERSION"
+
+
+run () {
+  if is_container; then
+    BEAMUP_PROJECT_DIR="$cwd" $cli_dir/priv/entrypoint.sh "$1"
+  else
+    container "$1"
+  fi
+}
 
 # Detect if `docker run` supports a given flag ($1)
 # for graceful fallback when docker client is older
@@ -68,21 +79,19 @@ container () {
     ${init} \
     --name="beamup-${project_name}" \
     --net=host \
-    --entrypoint="/host/builder/priv/entrypoint.sh" \
+    --entrypoint="/root/.beamup/cli/priv/entrypoint.sh" \
     ${tmp_volume} \
-    -v "${cli_dir}/rebar.config:/host/builder/rebar.config:ro" \
-    -v "${cli_dir}/src:/host/builder/src:ro" \
-    -v "${cli_dir}/test:/host/builder/test:ro" \
-    -v "${cli_dir}/priv:/host/builder/priv:ro" \
-    -v "${cli_dir}/commands:/host/builder/commands:ro" \
-    -v "${cwd}:/host/project/${project_name}:ro" \
-    -v "${cache_dir}/builder:/beamup/builder/_build" \
-    -v "${cache_dir}/elixir:/elixir" \
+    -v "${cwd}:/root/.beamup/host/project/${project_name}:ro" \
+    -v "${cli_dir}:/root/.beamup/cli" \
+    -v "${cache_dir}/builder:/root/.beamup/cli/_build" \
+    -v "${cache_dir}/elixir:/root/.beamup/elixir" \
+    -v "${cache_dir}/mix:/root/.mix" \
     -v "${cache_dir}/rebar3:/root/.cache/rebar3" \
     -v "${cache_dir}/shell:/root/.cache/erlang-history/" \
-    -v "${releases_dir}:/host/releases" \
+    -v "${releases_dir}:/root/.beamup/host/releases" \
     -e "TERM=dumb" \
     -e "DEBUG=${DEBUG}" \
+    -e "BEAMUP_PROJECT_DIR=/root/.beamup/host/project/${project_name}" \
     -e "BEAMUP_PROJECT_NAME=${project_name}" \
     -e "BEAMUP_STORE_URL=${BEAMUP_STORE_URL}" \
     -e "BEAMUP_STORE_SECRET=${BEAMUP_STORE_SECRET}" \
@@ -157,7 +166,7 @@ case $cli_command in
     kill_container
     ;;
   *)
-    container "$cli_args"
+    run "$cli_args"
     ;;
 esac
 

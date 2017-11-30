@@ -1,14 +1,14 @@
 -module(beamup_store).
 
 -export([new/2,
-         put/4,
+         put/3,
          get/3,
          versions/2]).
 
 new(Url, Secret) ->
   #{url => Url, secret => Secret}.
 
-put(Store, Project, TarPath, FullOrUpgrade) ->
+put(Store, Project, TarPath) ->
   Payload = {file, TarPath},
   Version = maps:get(version, Project),
   Path = to_path(Project),
@@ -65,8 +65,7 @@ from_etf(Body) ->
 
 to_path(#{name := Name,
           architecture := Architecture,
-          branch := Branch,
-          version := Version}) ->
+          branch := Branch}) ->
   <<$/, Name/binary,
     "/release/",
     Architecture/binary, $/,

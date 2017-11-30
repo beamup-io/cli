@@ -1,0 +1,7 @@
+{application, beamup_builder,
+ [{vsn, "*"},
+  {mod, { xx_app, []}},
+  {applications,
+   [kernel,
+    stdlib
+   ]}]}.

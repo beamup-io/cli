@@ -1,10 +1,6 @@
 -module(beamup_sanity_check).
 
--export([check/1]).
-
-check(#{path := Path, tool := Tool}) ->
-  ensure_clean_working_tree(Path),
-  ensure_supported_build_tool(Tool).
+-export([ensure_clean_working_tree/1, ensure_supported_build_tool/1]).
 
 ensure_clean_working_tree(Path) ->
   Dirty = beamup_git:is_dirty(Path),

@@ -1,7 +1,7 @@
 % Don't output anything to stdio here
-BaseDir = "/beamup/builder",
+BaseDir = "/tmp/beamup/cli".
 SrcDir = filename:join([BaseDir, "src"]),
-PathsFile = filename:join([BaseDir, "paths"]),
+PathsFile = filename:join([BaseDir, "paths"]).
 true = code:add_path(SrcDir),
 case filelib:is_file(PathsFile) of
   true ->
