@@ -21,7 +21,7 @@ is_installed(ElixirVersion) ->
 install_version(ElixirVersion) ->
   io:format("Installing Elixir ~p~n", [ElixirVersion]),
   Blob = download(url(ElixirVersion)),
-  Dir = "/elixir",
+  Dir = "/root/.beamup/elixir",
   io:format("Extracting to ~p~n", [Dir]),
   ok = filelib:ensure_dir(Dir),
   {ok, _} = zip:unzip(Blob, [{cwd, Dir}]),
