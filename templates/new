@@ -22,7 +22,7 @@ replace_pattern="s/beamup_project_name/$project_name/"
 perl -pi -w -e "$replace_pattern;" $( grep -rl "beamup_project_name" . )
 
 # rename directories depth-first
-find -depth "$project_dir" -type d -execdir rename "$replace_pattern" '{}' \;
+find . -depth "$project_dir" -type d -execdir rename "$replace_pattern" '{}' \;
 
 # rename files
 find . -exec rename "$replace_pattern" '{}' \;
