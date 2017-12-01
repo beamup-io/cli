@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "Hello World"
+
 set -e
 shopt -s dotglob
 
