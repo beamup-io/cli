@@ -1,7 +1,7 @@
 #!/usr/bin/env escript
 
 main(_) ->
-  Url = env("BEAMUP_STORE_URL"),
+  Url = env("BEAMUP_STORE"),
   Secret = env("BEAMUP_STORE_SECRET"),
   Path = env("BEAMUP_PROJECT_DIR"),
   beamup:run(Path, Url, Secret).
@@ -9,5 +9,5 @@ main(_) ->
 env(Key) ->
   case os:getenv(Key) of
     [_|_] = Val -> list_to_binary(Val);
-    _ -> throw("Please set environment variable " ++ Key)
+    _ -> <<>>
   end.

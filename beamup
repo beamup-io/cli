@@ -102,12 +102,22 @@ container () {
     rm -rf ${cache_dir}/container/tmp || true
   fi
 
+  # If $BEAMUP_STORE is an absolute path
+  # then mount that same path as volume
+  echo "$BEAMUP_STORE"
+  store_volume=""
+  if [[ $BEAMUP_STORE = '/'* ]]; then
+    echo "Mounting $BEAMUP_STORE"
+    store_volume="-v ${BEAMUP_STORE}:${BEAMUP_STORE}"
+  fi
+
   docker run --rm \
     ${init} \
     --name="beamup-${project_name}" \
     --net=host \
     --entrypoint="/root/.beamup/cli/priv/entrypoint.sh" \
     ${tmp_volume} \
+    ${store_volume} \
     -v "${cwd}:/root/.beamup/host/project/${project_name}:ro" \
     -v "${cli_dir}:/root/.beamup/cli" \
     -v "${cache_dir}/builder:/root/.beamup/cli/_build" \
@@ -120,7 +130,7 @@ container () {
     -e "DEBUG=${DEBUG}" \
     -e "BEAMUP_PROJECT_DIR=/root/.beamup/host/project/${project_name}" \
     -e "BEAMUP_PROJECT_NAME=${project_name}" \
-    -e "BEAMUP_STORE_URL=${BEAMUP_STORE_URL}" \
+    -e "BEAMUP_STORE=${BEAMUP_STORE}" \
     -e "BEAMUP_STORE_SECRET=${BEAMUP_STORE_SECRET}" \
     -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \
     -e "BEAMUP_ELIXIR_VERSION=${BEAMUP_ELIXIR_VERSION}" \
