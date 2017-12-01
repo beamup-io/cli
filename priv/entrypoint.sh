@@ -37,8 +37,7 @@ cp "$cli_dir/priv/.erlang" ~/.erlang
 
 # Compile builder
 tmp_cli_dir="/tmp/beamup/cli"
-mkdir -p "$tmp_cli_dir"
-cp -r "$cli_dir/." "$tmp_cli_dir"
+cp -r "$cli_dir" "$tmp_cli_dir"
 cd "$tmp_cli_dir"
 
 rebar3 compile
