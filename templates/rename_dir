@@ -7,6 +7,6 @@ new=${1/beamup_project_name/$BEAMUP_PROJECT_NAME}
 mkdir -p $new
 
 if [ "$1" != "$new" ]; then
-  cp -r "$1"/. "$new"
+  cp -R "$1"/. "$new"
   rm -rf "$1"
 fi
