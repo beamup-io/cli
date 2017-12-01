@@ -49,13 +49,13 @@ ls $cli_dir
 echo "DEBUG 2: ls tmp_cli_dir"
 ls $tmp_cli_dir
 
-cd "$tmp_cli_dir/cli"
+cd "$tmp_cli_dir"
 
 rebar3 compile
 
 # Write paths of compiled dependencies
 # to be read and loaded by ~/.erlang
-rebar3 path > "$tmp_cli_dir/cli/paths"
+rebar3 path > "$tmp_cli_dir/paths"
 
 cd "$BEAMUP_PROJECT_DIR"
 
