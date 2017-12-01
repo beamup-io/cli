@@ -28,7 +28,6 @@ export PATH="$beamup_dir/elixir/bin:$PATH"
 
 # Set global gitignore
 if [ -n $GLOBAL_GITIGNORE ]; then
-  echo "Global Gitgnore"
   echo "$GLOBAL_GITIGNORE" > ~/.beamup_gitignore
   git config --global core.excludesfile ~/.beamup_gitignore
 fi

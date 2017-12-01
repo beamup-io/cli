@@ -110,10 +110,12 @@ container () {
   echo "$BEAMUP_STORE"
   store_volume=""
   if [[ $BEAMUP_STORE = '/'* ]]; then
-    echo "Mounting $BEAMUP_STORE"
+    echo "Using local file system as store at: $BEAMUP_STORE"
     store_volume="-v ${BEAMUP_STORE}:${BEAMUP_STORE}"
   fi
 
+  # Read host's global gitignore file for passing
+  # into container as environment variable
   global_gitignore=$(cat $(git config --global core.excludesfile))
 
   docker run --rm \
