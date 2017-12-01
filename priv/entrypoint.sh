@@ -37,8 +37,18 @@ fi
 cp "$cli_dir/priv/.erlang" ~/.erlang
 
 # Compile builder
+echo "DEBUG 1: pwd: $(pwd), cli_dir: $cli_dir, ls:"
+ls
+
 tmp_cli_dir="/tmp/beamup"
 cp -R "$cli_dir" "$tmp_cli_dir"
+
+echo "DEBUG 2: ls cli_dir"
+ls $cli_dir
+
+echo "DEBUG 2: ls tmp_cli_dir"
+ls $tmp_cli_dir
+
 cd "$tmp_cli_dir/cli"
 
 rebar3 compile
