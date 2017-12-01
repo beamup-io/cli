@@ -26,6 +26,13 @@ export PATH="$cli_dir/commands:$PATH"
 # Add Elixir executables (iex, elixirc...)
 export PATH="$beamup_dir/elixir/bin:$PATH"
 
+# Set global gitignore
+if [ -n $GLOBAL_GITIGNORE ]; then
+  echo "Global Gitgnore"
+  echo "$GLOBAL_GITIGNORE" > ~/.beamup_gitignore
+  git config --global core.excludesfile ~/.beamup_gitignore
+fi
+
 # Let Erlang know where to find modules
 cp "$cli_dir/priv/.erlang" ~/.erlang
 

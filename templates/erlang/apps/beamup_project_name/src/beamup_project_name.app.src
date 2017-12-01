@@ -1,0 +1,9 @@
+{application, beamup_project_name,
+ [{description, ""},
+  {vsn, "*"},
+  {registered, []},
+  {mod, {beamup_project_name_app, []}},
+  {applications, [kernel,
+                  stdlib]},
+  {env, []},
+  {modules, []}]}.

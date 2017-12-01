@@ -23,13 +23,16 @@ BEAMUP_ERLANG_VERSION="20.1.2"
 main () {
   cli_command=$1
   if [ -z "$cli_command" ]; then
-    echo "usage: beamup build|attach|update|selftest|<script> [--version]"
+    echo "usage: beamup build|new|attach|update|selftest|<script> [project_name] [--version]"
     exit 1
   else
     shift
   fi
 
   case $cli_command in
+    new)
+      new $cli_args
+      ;;
     --version)
       version
       ;;
@@ -111,6 +114,8 @@ container () {
     store_volume="-v ${BEAMUP_STORE}:${BEAMUP_STORE}"
   fi
 
+  global_gitignore=$(cat $(git config --global core.excludesfile))
+
   docker run --rm \
     ${init} \
     --name="beamup-${project_name}" \
@@ -134,8 +139,14 @@ container () {
     -e "BEAMUP_STORE_SECRET=${BEAMUP_STORE_SECRET}" \
     -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \
     -e "BEAMUP_ELIXIR_VERSION=${BEAMUP_ELIXIR_VERSION}" \
+    -e "GLOBAL_GITIGNORE=${global_gitignore}" \
     -${interactive}t $image \
     "$1"
+}
+
+new () {
+  shift
+  $cli_dir/templates/new "$1"
 }
 
 attach () {

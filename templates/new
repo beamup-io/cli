@@ -1,0 +1,44 @@
+#!/bin/bash
+
+set -e
+
+cli_args="${@}"
+cwd=$(pwd)
+examples_dir=$(dirname "$(readlink -f "$0")")
+
+project_name="$1"
+project_dir="$cwd/$project_name"
+template="erlang"
+
+# Copy template to new project folder
+mkdir "$project_name" || fail "Directory already exists"
+cp -R "$examples_dir/$template/." "$project_dir/"
+cd $project_name
+
+# Replace `beamup_project_name` placeholder with $project_name
+replace_pattern="s/beamup_project_name/$project_name/"
+
+# replace in file contents
+perl -pi -w -e "$replace_pattern;" $( grep -rl "beamup_project_name" . )
+
+# rename directories depth-first
+find -d "$project_dir" -type d -execdir rename "$replace_pattern" '{}' \;
+
+# rename files
+find . -exec rename "$replace_pattern" '{}' \;
+
+git init
+git add .
+git commit -m 'Initial commit'
+
+echo ""
+echo "Yay! Your $project project '$project_name' is ready:"
+echo "  $project_dir"
+echo ""
+echo "  Run:"
+echo "  $  cd ./$project_name"
+
+fail () {
+  echo "Failed to create project: $1"
+  exit 1
+}
