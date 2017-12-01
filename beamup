@@ -11,8 +11,7 @@ source $cli_dir/priv/is_container.sh
 # Setup temp directories
 tmp_dir=$(readlink -f "$cli_dir/../tmp")
 cache_dir="$tmp_dir/cache"
-releases_dir="$tmp_dir/releases"
-mkdir -p $cache_dir $releases_dir
+mkdir -p $cache_dir
 
 # Use the name of the current folder as release name
 project_name=$(basename $cwd)
@@ -107,10 +106,9 @@ container () {
 
   # If $BEAMUP_STORE is an absolute path
   # then mount that same path as volume
-  echo "$BEAMUP_STORE"
   store_volume=""
   if [[ $BEAMUP_STORE = '/'* ]]; then
-    echo "Using local file system as store at: $BEAMUP_STORE"
+    echo "Using local file system as Release Store: $BEAMUP_STORE"
     store_volume="-v ${BEAMUP_STORE}:${BEAMUP_STORE}"
   fi
 
@@ -127,12 +125,11 @@ container () {
     ${store_volume} \
     -v "${cwd}:/root/.beamup/host/project/${project_name}:ro" \
     -v "${cli_dir}:/root/.beamup/cli" \
-    -v "${cache_dir}/builder:/root/.beamup/cli/_build" \
+    -v "${cache_dir}/builder:/tmp/beamup/cli/_build" \
     -v "${cache_dir}/elixir:/root/.beamup/elixir" \
     -v "${cache_dir}/mix:/root/.mix" \
     -v "${cache_dir}/rebar3:/root/.cache/rebar3" \
     -v "${cache_dir}/shell:/root/.cache/erlang-history/" \
-    -v "${releases_dir}:/root/.beamup/host/releases" \
     -e "TERM=dumb" \
     -e "DEBUG=${DEBUG}" \
     -e "BEAMUP_PROJECT_DIR=/root/.beamup/host/project/${project_name}" \
