@@ -41,6 +41,7 @@ if [ ! -d /tmp/beamup ]; then mkdir /tmp/beamup; fi
 cp -R "$cli_dir" /tmp/beamup
 cd /tmp/beamup/cli
 rebar3 compile
+chmod -R 0777 /tmp/beamup
 
 # Write paths of compiled dependencies
 # to be read and loaded by ~/.erlang
