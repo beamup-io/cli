@@ -58,7 +58,7 @@ run () {
 
 raw_architecture=$(uname -m)
 case $raw_architecture in
-  arm32|armv7|armhfp)
+  arm32|armv7|armv7l|armhfp)
     architecture=arm32v7
     ;;
   arm64|armv8|aarch64)
