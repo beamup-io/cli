@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+new=${1/beamup_project_name/$BEAMUP_PROJECT_NAME}
+
+if [ "$1" != "$new" ]; then
+  mv "$1" "$new"
+fi
