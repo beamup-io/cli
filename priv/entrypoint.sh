@@ -37,16 +37,15 @@ fi
 cp "$cli_dir/priv/.erlang" ~/.erlang
 
 # Compile builder
-tmp_cli_dir="/tmp/beamup/cli"
-mkdir -p "$tmp_cli_dir"
-cp -r "$cli_dir/*" "$tmp_cli_dir"
-cd "$tmp_cli_dir"
+tmp_cli_dir="/tmp/beamup/"
+cp -r "$cli_dir" "$tmp_cli_dir"
+cd "$tmp_cli_dir/cli"
 
 rebar3 compile
 
 # Write paths of compiled dependencies
 # to be read and loaded by ~/.erlang
-rebar3 path > "$tmp_cli_dir/paths"
+rebar3 path > "$tmp_cli_dir/cli/paths"
 
 cd "$BEAMUP_PROJECT_DIR"
 
