@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+shopt -s dotglob
 
 cli_dir=$(readlink -f "$(dirname "$(readlink -f "$0")")/../")
 beamup_dir=$(readlink -f "$cli_dir/../")
@@ -37,7 +38,8 @@ cp "$cli_dir/priv/.erlang" ~/.erlang
 
 # Compile builder
 tmp_cli_dir="/tmp/beamup/cli"
-cp -r "$cli_dir" "$tmp_cli_dir"
+mkdir -p "$tmp_cli_dir"
+cp -r "$cli_dir/*" "$tmp_cli_dir"
 cd "$tmp_cli_dir"
 
 rebar3 compile
