@@ -20,32 +20,30 @@ get(#{path := StorePath}, Project, Version) ->
   Filename = to_filename(Project2),
   filename:join([StorePath, Filename]).
 
-versions(#{path := StorePath}, #{name := Name}) ->
+versions(#{path := StorePath}, Project) ->
   {ok, Filenames} = file:list_dir(StorePath),
   lists:filtermap(fun(Filename) ->
-    case from_filename(Filename) of
-      {true, {Name, Vsn}} -> {true, Vsn};
+    case from_filename(Project, Filename) of
+      {true, Vsn} -> {true, Vsn};
       _ -> false
     end
   end, Filenames).
 
 % Private
 
-from_filename(Filename) ->
-  FullSuffix = ".tar.gz",
-  TotalLength = string:length(Filename),
-  SuffixLength = string:length(FullSuffix),
-  HashLength = 40,
-  case string:find(Filename, FullSuffix, trailing) of
+from_filename(#{name := Name,
+                architecture := Architecture,
+                branch := Branch}, Filename) ->
+  Prefix = <<Name/binary, $-, Architecture/binary, $-,
+             Branch/binary, $->>,
+  Suffix = ".tar.gz",
+  case string:find(Filename, Prefix) of
     nomatch -> false;
-    _ -> case TotalLength > (HashLength + SuffixLength) of
-      true ->
-        PrefixLength = TotalLength - SuffixLength - HashLength - 1,
-        Name = string:substr(Filename, 1, PrefixLength),
-        Vsn = string:substr(Filename, PrefixLength + 2, HashLength),
-        {true, {Name, Vsn}};
-      false -> false
-    end
+    _ -> WithoutPrefix = string:slice(Filename, string:length(Prefix)),
+      VsnLength = string:length(WithoutPrefix) - string:length(Suffix),
+      WithoutSuffix = string:substr(WithoutPrefix, 1, VsnLength),
+      Vsn = list_to_binary(WithoutSuffix),
+      {true, Vsn}
   end.
 
 to_filename(#{name := Name,
