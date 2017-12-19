@@ -127,7 +127,7 @@ container () {
 
   # Read host's global gitignore file for passing
   # into container as environment variable
-  global_gitignore_path=$(git config --global core.excludesfile)
+  global_gitignore_path=$(git config --global core.excludesfile || true)
   if [ -n "$global_gitignore_path" ]; then
     global_gitignore=$(<$global_gitignore_path)
   fi
