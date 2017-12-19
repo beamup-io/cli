@@ -8,6 +8,8 @@ cli_dir=$(dirname "$(readlink -f "$0")")
 
 source $cli_dir/priv/is_container.sh
 
+export TERM=dumb
+
 # Setup temp directories
 tmp_dir=$(readlink -f "$cli_dir/../tmp")
 cache_dir="$tmp_dir/cache"
@@ -129,11 +131,11 @@ container () {
     -v "${cache_dir}/elixir:/root/.beamup/elixir" \
     -v "${cache_dir}/mix:/root/.mix" \
     -v "${cache_dir}/rebar3:/root/.cache/rebar3" \
-    -v "${cache_dir}/shell:/root/.cache/erlang-history/" \
-    -e "TERM=dumb" \
+    -v "${cache_dir}/shell/erl:/root/.cache/erlang-history/" \
+    -v "${cache_dir}/shell/iex:/root/.iex_history" \
+    -e "TERM=${TERM}" \
     -e "DEBUG=${DEBUG}" \
     -e "BEAMUP_PROJECT_DIR=/root/.beamup/host/project/${project_name}" \
-    -e "BEAMUP_PROJECT_NAME=${project_name}" \
     -e "BEAMUP_STORE=${BEAMUP_STORE}" \
     -e "BEAMUP_STORE_SECRET=${BEAMUP_STORE_SECRET}" \
     -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \
