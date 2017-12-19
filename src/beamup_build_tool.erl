@@ -61,8 +61,7 @@ app_config(#{ tool := Tool, path := ProjectPath }, AppName) ->
 
 extract(TarPath) ->
   Version = filename:basename(TarPath, ".tar.gz"),
-  ParentDir = filename:dirname(TarPath),
-  TargetDir = filename:join([ParentDir, Version]),
+  TargetDir = beamup_fileutils:temp_dir(Version),
   io:format("TargetDir: ~p~n", [TargetDir]),
   ok = filelib:ensure_dir(<<TargetDir/binary, $/>>),
   {0, _} = beamup_shell:cmd(<<"tar xvfz ", TarPath/binary>>, [{cd, TargetDir}]),
