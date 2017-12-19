@@ -7,6 +7,8 @@ run(OriginalPath, Url, Secret) ->
   beamup_sanity_check:ensure_supported_build_tool(Tool),
 
   Project = beamup_project:new(OriginalPath),
+  WorkingPath = maps:get(path, Project),
+  io:format("Working path: ~p~n", [WorkingPath]),
   beamup_sanity_check:ensure_clean_working_tree(beamup_project:path(Project)),
 
   Store = beamup_store:new(Url, Secret),
@@ -48,4 +50,7 @@ run(OriginalPath, Url, Secret) ->
   TarPath = beamup_build_tool:tar(Project),
 
   io:format("Uploading full release to store~n"),
-  beamup_store:put(Store, Project, TarPath).
+  beamup_store:put(Store, Project, TarPath),
+
+  % Clean up
+  beamup_project:remove(Project).
