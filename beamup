@@ -127,9 +127,10 @@ container () {
 
   # Read host's global gitignore file for passing
   # into container as environment variable
-  global_gitignore=$(cat $(git config --global core.excludesfile))
-
-  echo "calling docker run"
+  global_gitignore_path=$(git config --global core.excludesfile)
+  if [ -n "$global_gitignore_path" ]; then
+    global_gitignore=$(<$global_gitignore_path)
+  fi
 
   docker run --rm \
     ${init} \
