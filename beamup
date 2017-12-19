@@ -62,11 +62,20 @@ run () {
 
 raw_architecture=$(uname -m)
 case $raw_architecture in
-  arm32|armv7|armv7l|armhfp)
+  arm|arm32|armv7|armv7l|armhfp)
     architecture=arm32v7
     ;;
-  arm64|armv8|aarch64)
+  arm64|armv8|armv8b|armv8l|aarch64|aarch64_be)
     architecture=arm64v8
+    ;;
+  i386|i686|i686-64|i686-AT386)
+    architecture=i386
+    ;;
+  s390x|s390)
+    architecture=s390x
+    ;;
+  ppc|ppc64|ppcle|ppc64le)
+    architecture=ppc64le
     ;;
   *)
     architecture=amd64
