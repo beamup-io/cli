@@ -24,8 +24,7 @@ BEAMUP_ERLANG_VERSION="20.1.2"
 main () {
   cli_command=$1
   if [ -z "$cli_command" ]; then
-    echo "usage: beamup build|new|attach|update|selftest|<script> [project_name] [--version]"
-    exit 1
+    cli_command="build"
   else
     shift
   fi
