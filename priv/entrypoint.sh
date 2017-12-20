@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo "..."
-
 set -e
 shopt -s dotglob
 

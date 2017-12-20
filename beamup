@@ -96,7 +96,6 @@ container () {
   # Detect if running in a TTY
   interactive=""
   if [ -t 0 ]; then
-    echo "Running in interactive mode"
     interactive="i"
   fi
 
@@ -107,8 +106,7 @@ container () {
   # Try to mount /tmp inside the container as ramdisk to avoid SSD thrashing
   tmp_volume=""
   if is_docker_run_flag_supported "--mount"; then
-    echo "Skipping tmpfs mount"
-    # tmp_volume="--mount type=tmpfs,destination=/tmp,tmpfs-mode=0755";
+    tmp_volume="--mount type=tmpfs,destination=/tmp,tmpfs-mode=0755";
   fi
 
   # Bind-mount /tmp to ${cache_dir}/container/tmp in debug mode
