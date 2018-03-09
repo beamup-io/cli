@@ -47,8 +47,9 @@ request(Store, Verb, Path, Payload, ReqHeaders) ->
   Options = [{follow_redirect, true},
             {max_redirect, 5},
             {basic_auth, {<<"key">>, maps:get(secret, Store)}}],
-  BaseUrl = maps:get(url, Store),
+  BaseUrl = remove_trailing_slash(maps:get(url, Store)),
   Url = <<BaseUrl/binary, Path/binary>>,
+  io:format("Request ~p ~p~n", [Verb, Url]),
   {ok, Status, ResHeaders, Client} = hackney:request(Verb, Url, ReqHeaders2, Payload, Options),
   {ok, Body} = hackney:body(Client),
   io:format("Status: ~p, ResHeaders: ~p~n", [Status, ResHeaders]),
@@ -70,3 +71,9 @@ to_path(#{name := Name,
     "/release/",
     Architecture/binary, $/,
     Branch/binary>>.
+
+remove_trailing_slash(Url) ->
+  case binary:last(Url) of
+    $/ -> binary:part(Url, {0, byte_size(Url) - 1});
+    _ -> Url
+  end.
