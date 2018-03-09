@@ -149,6 +149,7 @@ container () {
     -e "BEAMUP_PROJECT_DIR=/root/.beamup/host/project/${project_name}" \
     -e "BEAMUP_STORE=${BEAMUP_STORE}" \
     -e "BEAMUP_STORE_SECRET=${BEAMUP_STORE_SECRET}" \
+    -e "BEAMUP_NODE_BRANCH=${BEAMUP_NODE_BRANCH}" \
     -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \
     -e "BEAMUP_ELIXIR_VERSION=${BEAMUP_ELIXIR_VERSION}" \
     -e "GLOBAL_GITIGNORE=${global_gitignore}" \

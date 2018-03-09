@@ -27,5 +27,9 @@ select_backend(<<"http", _/binary>>) ->
 select_backend(<<"/", _/binary>>) ->
   beamup_store_fs;
 select_backend(UrlOrPath) ->
-  io:format("Invalid Store URL or Path: ~p~n", [UrlOrPath]),
+  io:format("Invalid store URL or path: ~p~n", [UrlOrPath]),
+  io:format("Please check that the environment variable BEAMUP_STORE is set~n"),
+  io:format("to either a valid URL, or an absolute file system path:~n"),
+  io:format("  export BEAMUP_STORE=https://store.example.com~n"),
+  io:format("  export BEAMUP_STORE=/tmp/store~n"),
   halt(1).
