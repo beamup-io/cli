@@ -1,6 +1,6 @@
 -module(beamup).
 
--export([build/3, node/3]).
+-export([build/3]).
 
 build(OriginalPath, Url, Secret) ->
   Tool = beamup_build_tool:detect(OriginalPath),
@@ -54,9 +54,3 @@ build(OriginalPath, Url, Secret) ->
 
   % Clean up
   beamup_project:remove(Project).
-
-node(Branch, Url, Secret) ->
-  io:format("Hi Node: ~n~p~n~p~n~p~n", [Url, Secret, Branch]),
-
-  Store = beamup_store:new(Url, Secret),
-  beamup_node:run(Branch, Store).

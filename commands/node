@@ -3,8 +3,9 @@
 main(_) ->
   Url = env("BEAMUP_STORE"),
   Secret = env("BEAMUP_STORE_SECRET"),
+  Name = env("BEAMUP_NODE_PROJECT_NAME"),
   Branch = env("BEAMUP_NODE_BRANCH"),
-  beamup:node(Branch, Url, Secret).
+  beamup_node:run(Name, Branch, Url, Secret).
 
 env(Key) ->
   case os:getenv(Key) of

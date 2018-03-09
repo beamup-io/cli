@@ -63,9 +63,7 @@ extract(TarPath) ->
   Version = filename:basename(TarPath, ".tar.gz"),
   TargetDir = beamup_fileutil:temp_dir(Version),
   io:format("TargetDir: ~p~n", [TargetDir]),
-  ok = filelib:ensure_dir(<<TargetDir/binary, $/>>),
-  {0, _} = beamup_shell:cmd(<<"tar xvfz ", TarPath/binary>>, [{cd, TargetDir}]),
-  TargetDir.
+  beamup_fileutil:extract(TarPath, TargetDir).
 
 update_paths(#{tool := Tool} = Project, OldPath) ->
   Tool:update_paths(Project, OldPath).

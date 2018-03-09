@@ -1,21 +1,35 @@
 -module(beamup_project).
 
--export([new/1,
+-export([architecture/1,
+         new/1,
+         new_remote/2,
          path/1,
+         branch/1,
          duplicate/1,
          remove/1]).
 
 new(Path) ->
   Project = #{path => Path,
     name => name_from_path(Path),
-    architecture => architecture(),
+    architecture => current_architecture(),
     branch => beamup_git:branch(Path),
     version => beamup_git:commit_hash(Path),
     tool => beamup_build_tool:detect(Path)},
   duplicate(Project).
 
+new_remote(Name, Branch) ->
+  #{name => Name,
+    architecture => current_architecture(),
+    branch => Branch}.
+
 path(Project) ->
   maps:get(path, Project).
+
+branch(Project) ->
+  maps:get(branch, Project).
+
+architecture(Project) ->
+  maps:get(architecture, Project).
 
 duplicate(Project) ->
   OldPath = maps:get(path, Project),
@@ -34,5 +48,5 @@ remove(Project) ->
 name_from_path(Path) ->
   lists:last(string:lexemes(Path,"/")).
 
-architecture() ->
+current_architecture() ->
   list_to_binary(erlang:system_info(system_architecture)).

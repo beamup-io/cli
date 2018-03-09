@@ -12,8 +12,10 @@ export TERM=dumb
 
 # Setup temp directories
 tmp_dir=$(readlink -f "$cli_dir/../tmp")
+node_dir=$(readlink -f "$cli_dir/../node")
 cache_dir="$tmp_dir/cache"
 mkdir -p $cache_dir
+mkdir -p $node_dir
 
 # Use the name of the current folder as release name
 project_name=$(basename $cwd)
@@ -138,6 +140,7 @@ container () {
     ${store_volume} \
     -v "${cwd}:/root/.beamup/host/project/${project_name}:ro" \
     -v "${cli_dir}:/root/.beamup/cli" \
+    -v "${node_dir}:/root/.beamup/node" \
     -v "${cache_dir}/builder:/tmp/beamup/cli/_build" \
     -v "${cache_dir}/elixir:/root/.beamup/elixir" \
     -v "${cache_dir}/mix:/root/.mix" \
@@ -150,6 +153,7 @@ container () {
     -e "BEAMUP_STORE=${BEAMUP_STORE}" \
     -e "BEAMUP_STORE_SECRET=${BEAMUP_STORE_SECRET}" \
     -e "BEAMUP_NODE_BRANCH=${BEAMUP_NODE_BRANCH}" \
+    -e "BEAMUP_NODE_PROJECT_NAME=${BEAMUP_NODE_PROJECT_NAME}" \
     -e "BEAMUP_ERLANG_VERSION=${BEAMUP_ERLANG_VERSION}" \
     -e "BEAMUP_ELIXIR_VERSION=${BEAMUP_ELIXIR_VERSION}" \
     -e "GLOBAL_GITIGNORE=${global_gitignore}" \
