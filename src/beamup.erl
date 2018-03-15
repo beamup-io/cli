@@ -52,5 +52,6 @@ build(OriginalPath, Url, Secret) ->
   io:format("Uploading full release to store~n"),
   beamup_store:put(Store, Project, TarPath),
 
-  % Clean up
-  beamup_project:remove(Project).
+  beamup_project:remove(Project),
+
+  io:format("Done!").

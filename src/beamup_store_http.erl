@@ -3,57 +3,107 @@
 -export([new/2,
          put/3,
          get/3,
-         versions/2]).
+         versions/2,
+         subscribe/2]).
 
 new(Url, Secret) ->
-  #{url => Url, secret => Secret}.
+  ConnPid = open_connection(Url),
+  #{url => Url,
+    secret => Secret,
+    connection => ConnPid}.
 
 put(Store, Project, TarPath) ->
-  Payload = {file, TarPath},
   Version = maps:get(version, Project),
   Path = to_path(Project),
   Path2 = <<Path/binary, $/, Version/binary>>,
-  ReqHeaders = [{<<"Content-Type">>, <<"application/gzip">>}],
-  request(Store, post, Path2, Payload, ReqHeaders).
+  Headers = [{<<"content-type">>, <<"application/gzip">>}] ++ headers(Store),
+  ConnPid = maps:get(connection, Store),
+  StreamRef = gun:put(ConnPid,
+                      Path2,
+                      Headers),
+  {ok, IoDevice} = file:open(TarPath, [read, binary, raw]),
+  upload_file(ConnPid, StreamRef, IoDevice),
+  {response, fin, Status, _} = gun:await(ConnPid, StreamRef),
+  ok = assert_success(Status).
 
 get(Store, Project, Version) ->
   Path = to_path(Project),
   Path2 = <<Path/binary, $/, Version/binary>>,
-  ReqHeaders = [{<<"Accept">>, <<"application/gzip">>}],
-  Blob = request(Store, get, Path2, <<>>, ReqHeaders),
+  Headers = [{<<"accept">>, <<"application/gzip">>}] ++ headers(Store),
+  ConnPid = maps:get(connection, Store),
+  StreamRef = gun:get(ConnPid,
+                      Path2,
+                      Headers),
+  File = download_file(ConnPid, StreamRef),
   TempPath = temp_tar_path(Version),
-  ok = file:write_file(TempPath, Blob),
+  ok = file:write_file(TempPath, File),
   TempPath.
 
 versions(Store, Project) ->
   Path = to_path(Project),
-  List = from_etf(request(Store, get, Path, <<>>, [])),
+  Headers = headers(Store),
+  ConnPid = maps:get(connection, Store),
+  StreamRef = gun:get(ConnPid,
+                      Path,
+                      Headers),
+  {Status, Body} = case gun:await(ConnPid, StreamRef) of
+    {response, fin, _Status, _ResHeaders} ->
+      no_data;
+    {response, nofin, ResStatus, _ResHeaders} ->
+      {ok, Body2} = gun:await_body(ConnPid, StreamRef),
+      io:format("~s~n", [Body2]),
+      {ResStatus, Body2}
+  end,
+  assert_success(Status),
+  List = from_etf(Body),
   case List of
     ok -> [];
     _ -> List
   end.
 
+subscribe(_Store, _Project) ->
+  {}.
+
 % Private
+
+download_file(ConnPid, StreamRef) ->
+  receive
+    {gun_response, ConnPid, StreamRef, fin, _Status, _Headers} ->
+      no_data;
+    {gun_response, ConnPid, StreamRef, nofin, _Status, _Headers} ->
+      receive_data(ConnPid, StreamRef, <<>>);
+    {'DOWN', _MRef, process, ConnPid, Reason} ->
+      exit(Reason)
+  after 1000 ->
+    exit(timeout)
+  end.
+
+receive_data(ConnPid, StreamRef, BodyAcc) ->
+  receive
+    {gun_data, ConnPid, StreamRef, nofin, Body} ->
+      receive_data(ConnPid, StreamRef, <<BodyAcc/binary, Body/binary>>);
+    {gun_data, ConnPid, StreamRef, fin, Body} ->
+      <<BodyAcc/binary, Body/binary>>;
+    {'DOWN', _MRef, process, ConnPid, Reason} ->
+      exit(Reason)
+  after 1000 ->
+    exit(timeout)
+  end.
+
+upload_file(ConnPid, StreamRef, IoDevice) ->
+  case file:read(IoDevice, 8000) of
+    eof ->
+      gun:data(ConnPid, StreamRef, fin, <<>>),
+      file:close(IoDevice);
+    {ok, Bin} ->
+      gun:data(ConnPid, StreamRef, nofin, Bin),
+      upload_file(ConnPid, StreamRef, IoDevice)
+  end.
 
 temp_tar_path(Version) ->
   Dir = <<"/tmp/beamup/releases/">>,
   filelib:ensure_dir(Dir),
   <<Dir/binary, Version/binary, ".tar.gz">>.
-
-request(Store, Verb, Path, Payload, ReqHeaders) ->
-  application:ensure_all_started(hackney),
-  ReqHeaders2 = ReqHeaders ++
-    [{<<"User-Agent">>, <<"beamup-builder/0.1 hackney/*">>}],
-  Options = [{follow_redirect, true},
-            {max_redirect, 5},
-            {basic_auth, {<<"key">>, maps:get(secret, Store)}}],
-  BaseUrl = remove_trailing_slash(maps:get(url, Store)),
-  Url = <<BaseUrl/binary, Path/binary>>,
-  io:format("Request ~p ~p~n", [Verb, Url]),
-  {ok, Status, ResHeaders, Client} = hackney:request(Verb, Url, ReqHeaders2, Payload, Options),
-  {ok, Body} = hackney:body(Client),
-  io:format("Status: ~p, ResHeaders: ~p~n", [Status, ResHeaders]),
-  Body.
 
 from_etf(Body) ->
   case Body of
@@ -64,16 +114,38 @@ from_etf(Body) ->
       Term
   end.
 
+to_path(Project) ->
+  to_path(Project, <<"release">>).
+to_path(Project, subscribe) ->
+  to_path(Project, <<"subscribe">>);
 to_path(#{name := Name,
           architecture := Architecture,
-          branch := Branch}) ->
+          branch := Branch}, Type) ->
   <<$/, Name/binary,
-    "/release/",
+    $/, Type/binary, $/,
     Architecture/binary, $/,
     Branch/binary>>.
 
-remove_trailing_slash(Url) ->
-  case binary:last(Url) of
-    $/ -> binary:part(Url, {0, byte_size(Url) - 1});
-    _ -> Url
-  end.
+auth_header(#{secret := Secret}) ->
+  Auth = base64:encode(<<"key", $:, Secret/binary>>),
+  {<<"authorization">>, <<"Basic ", Auth/binary>>}.
+
+headers(Store) ->
+  [{<<"user-agent">>, <<"beamup/* gun/*">>},
+   auth_header(Store)].
+
+open_connection(Url) ->
+  application:ensure_all_started(gun),
+  {ok, {Scheme, _, HostBinary, Port, _, _}} = http_uri:parse(Url),
+  Host = binary_to_list(HostBinary),
+  {ok, ConnPid} = case Scheme of
+    https -> gun:open(Host, Port, #{transport => ssl});
+    _ -> gun:open(Host, Port)
+  end,
+  {ok, _Protocol} = gun:await_up(ConnPid),
+  ConnPid.
+
+assert_success(S) when 200 =< S, S =< 299 ->
+  ok;
+assert_success(_) ->
+  error.
