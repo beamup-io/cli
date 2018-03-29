@@ -4,7 +4,7 @@
          put/3,
          get/3,
          versions/2,
-         subscribe/2]).
+         subscribe/3]).
 
 new(UrlOrPath, Secret) ->
   Backend = select_backend(UrlOrPath),
@@ -20,8 +20,8 @@ get(#{backend := Backend} = Store, Project, Version) ->
 versions(#{backend := Backend} = Store, Project) ->
   Backend:versions(Store, Project).
 
-subscribe(#{backend := Backend} = Store, Project) ->
-  Backend:subscribe(Store, Project).
+subscribe(#{backend := Backend} = Store, Project, SubscriberPid) ->
+  Backend:subscribe(Store, Project, SubscriberPid).
 
 % Private
 

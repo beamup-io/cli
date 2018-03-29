@@ -4,7 +4,9 @@
          put/3,
          get/3,
          versions/2,
-         subscribe/2]).
+         subscribe/3]).
+
+-export([handle_subscription/1]).
 
 new(Url, Secret) ->
   ConnPid = open_connection(Url),
@@ -34,42 +36,74 @@ get(Store, Project, Version) ->
   StreamRef = gun:get(ConnPid,
                       Path2,
                       Headers),
-  File = download_file(ConnPid, StreamRef),
+  {ok, File} = download_file(ConnPid, StreamRef),
   TempPath = temp_tar_path(Version),
   ok = file:write_file(TempPath, File),
   TempPath.
 
 versions(Store, Project) ->
   Path = to_path(Project),
-  Headers = headers(Store),
+  Headers = [{<<"accept">>, <<"application/erlang">>}] ++ headers(Store),
   ConnPid = maps:get(connection, Store),
   StreamRef = gun:get(ConnPid,
                       Path,
                       Headers),
-  {Status, Body} = case gun:await(ConnPid, StreamRef) of
-    {response, fin, _Status, _ResHeaders} ->
-      no_data;
-    {response, nofin, ResStatus, _ResHeaders} ->
+  case gun:await(ConnPid, StreamRef) of
+    {response, _Fin, 404, _ResHeaders} ->
+      [];
+    {response, _Fin, 200, _ResHeaders} ->
       {ok, Body2} = gun:await_body(ConnPid, StreamRef),
-      io:format("~s~n", [Body2]),
-      {ResStatus, Body2}
-  end,
-  assert_success(Status),
-  List = from_etf(Body),
-  case List of
-    ok -> [];
-    _ -> List
+      List = from_etf(Body2),
+      case List of
+        ok -> [];
+        _ -> List
+      end
   end.
 
-subscribe(_Store, _Project) ->
-  {}.
+subscribe(Store, Project, SubscriberPid) ->
+  ok.
+  % io:format("Subscribing ~p", [SubscriberPid]),
+  % Path = to_path(Project, subscribe),
+  % Headers = [{<<"accept">>, <<"text/event-stream">>}] ++ headers(Store),
+  % ConnPid = maps:get(connection, Store),
+  % HandlerPid = spawn(?MODULE, handle_subscription, [SubscriberPid]),
+  % gun:get(ConnPid,
+  %         Path,
+  %         Headers,
+  %         #{reply_to => HandlerPid}).
+
+handle_subscription(SubscriberPid) ->
+  receive
+    {gun_response, _ConnPid, _StreamRef, nofin, Status, Headers} ->
+      io:format("1 ~p ~p", [Status, Headers]),
+      handle_subscription2(SubscriberPid);
+    Msg ->
+      io:format("Unknown response ~p~n", [Msg])
+  after 5000 ->
+    io:format("Timeout1~n"),
+    exit(timeout)
+  end.
+
+handle_subscription2(SubscriberPid) ->
+  receive
+    {gun_sse, Pid, Ref, Event} ->
+      io:format("event ~p", [Event]),
+      handle_subscription2(SubscriberPid);
+    {'DOWN', _MRef, process, _ConnPid, Reason} ->
+      exit(Reason);
+    Msg ->
+      io:format("Msg ~p", [Msg]),
+      handle_subscription2(SubscriberPid)
+  after 5000 ->
+    io:format("Timeout2~n"),
+    handle_subscription2(SubscriberPid)
+  end.
+
 
 % Private
 
 download_file(ConnPid, StreamRef) ->
   receive
-    {gun_response, ConnPid, StreamRef, fin, _Status, _Headers} ->
-      no_data;
     {gun_response, ConnPid, StreamRef, nofin, _Status, _Headers} ->
       receive_data(ConnPid, StreamRef, <<>>);
     {'DOWN', _MRef, process, ConnPid, Reason} ->
@@ -83,7 +117,7 @@ receive_data(ConnPid, StreamRef, BodyAcc) ->
     {gun_data, ConnPid, StreamRef, nofin, Body} ->
       receive_data(ConnPid, StreamRef, <<BodyAcc/binary, Body/binary>>);
     {gun_data, ConnPid, StreamRef, fin, Body} ->
-      <<BodyAcc/binary, Body/binary>>;
+      {ok, <<BodyAcc/binary, Body/binary>>};
     {'DOWN', _MRef, process, ConnPid, Reason} ->
       exit(Reason)
   after 1000 ->
@@ -108,10 +142,7 @@ temp_tar_path(Version) ->
 from_etf(Body) ->
   case Body of
     <<>> -> ok;
-    Etf ->
-      Term = binary_to_term(Etf, [safe]),
-      io:format("Response: ~p~n", [Term]),
-      Term
+    Etf -> binary_to_term(Etf, [safe])
   end.
 
 to_path(Project) ->
@@ -140,12 +171,14 @@ open_connection(Url) ->
   Host = binary_to_list(HostBinary),
   {ok, ConnPid} = case Scheme of
     https -> gun:open(Host, Port, #{transport => ssl});
-    _ -> gun:open(Host, Port)
+    http -> gun:open(Host, Port)
   end,
-  {ok, _Protocol} = gun:await_up(ConnPid),
+  {ok, Protocol} = gun:await_up(ConnPid),
+  io:format("Connected to store at ~p://~s:~p~n", [Protocol, Host, Port]),
   ConnPid.
 
 assert_success(S) when 200 =< S, S =< 299 ->
   ok;
-assert_success(_) ->
+assert_success(S) ->
+  io:format("HTTP ~p~n", [S]),
   error.
