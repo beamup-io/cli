@@ -61,16 +61,14 @@ versions(Store, Project) ->
   end.
 
 subscribe(Store, Project, SubscriberPid) ->
-  ok.
-  % io:format("Subscribing ~p", [SubscriberPid]),
-  % Path = to_path(Project, subscribe),
-  % Headers = [{<<"accept">>, <<"text/event-stream">>}] ++ headers(Store),
-  % ConnPid = maps:get(connection, Store),
-  % HandlerPid = spawn(?MODULE, handle_subscription, [SubscriberPid]),
-  % gun:get(ConnPid,
-  %         Path,
-  %         Headers,
-  %         #{reply_to => HandlerPid}).
+  Path = to_path(Project, subscribe),
+  Headers = [{<<"accept">>, <<"text/event-stream">>}] ++ headers(Store),
+  ConnPid = maps:get(connection, Store),
+  SseHandlerPid = spawn(?MODULE, handle_subscription, [SubscriberPid]),
+  gun:get(ConnPid,
+          Path,
+          Headers,
+          #{reply_to => SseHandlerPid}).
 
 handle_subscription(SubscriberPid) ->
   receive
@@ -79,15 +77,15 @@ handle_subscription(SubscriberPid) ->
       handle_subscription2(SubscriberPid);
     Msg ->
       io:format("Unknown response ~p~n", [Msg])
+      exit(unknown_response)
   after 5000 ->
-    io:format("Timeout1~n"),
     exit(timeout)
   end.
 
 handle_subscription2(SubscriberPid) ->
   receive
     {gun_sse, Pid, Ref, Event} ->
-      io:format("event ~p", [Event]),
+      io:format("Event ~p", [Event]),
       handle_subscription2(SubscriberPid);
     {'DOWN', _MRef, process, _ConnPid, Reason} ->
       exit(Reason);
@@ -95,7 +93,6 @@ handle_subscription2(SubscriberPid) ->
       io:format("Msg ~p", [Msg]),
       handle_subscription2(SubscriberPid)
   after 5000 ->
-    io:format("Timeout2~n"),
     handle_subscription2(SubscriberPid)
   end.
 
@@ -169,9 +166,18 @@ open_connection(Url) ->
   application:ensure_all_started(gun),
   {ok, {Scheme, _, HostBinary, Port, _, _}} = http_uri:parse(Url),
   Host = binary_to_list(HostBinary),
+  HttpOpts = #{
+    content_handlers => [gun_sse, gun_data],
+    keepalive => infinity
+  },
+  Opts = #{
+    trace => false,
+    http_opts => HttpOpts,
+    http2_opts => HttpOpts
+  },
   {ok, ConnPid} = case Scheme of
-    https -> gun:open(Host, Port, #{transport => ssl});
-    http -> gun:open(Host, Port)
+    https -> gun:open(Host, Port, maps:set(transport, ssl, Opts));
+    http -> gun:open(Host, Port, Opts)
   end,
   {ok, Protocol} = gun:await_up(ConnPid),
   io:format("Connected to store at ~p://~s:~p~n", [Protocol, Host, Port]),
